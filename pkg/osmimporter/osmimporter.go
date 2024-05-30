@@ -39,6 +39,11 @@ type platform struct {
 	positions string
 }
 
+type stopPosition struct {
+	id       int64
+	position string
+}
+
 type stopArea struct {
 	id      int
 	members []int64
@@ -63,22 +68,24 @@ func (i *osmImporter) Import() {
 		i.countryRepo.Save(country)
 
 		ci := countryImporter{
-			country:     country,
-			osmImporter: i,
-			stations:    make(map[int64]station),
-			platforms:   make(map[int64]platform),
-			stopAreas:   []stopArea{},
+			country:       country,
+			osmImporter:   i,
+			stations:      make(map[int64]station),
+			platforms:     make(map[int64]platform),
+			stopPositions: make(map[int64]stopPosition),
+			stopAreas:     []stopArea{},
 		}
 		ci.importCountry()
 	}
 }
 
 type countryImporter struct {
-	country     country.Country
-	osmImporter *osmImporter
-	stations    map[int64]station
-	platforms   map[int64]platform
-	stopAreas   []stopArea
+	country       country.Country
+	osmImporter   *osmImporter
+	stations      map[int64]station
+	platforms     map[int64]platform
+	stopPositions map[int64]stopPosition
+	stopAreas     []stopArea
 }
 
 func (i *countryImporter) importCountry() {
@@ -127,14 +134,17 @@ func (i *countryImporter) parseOsmData(scanner *osmpbf.Scanner) {
 	switch o := scanner.Object().(type) {
 	case *osm.Node:
 		isStation := o.Tags.Find("public_transport") == "station"
+		isStopPosition := o.Tags.Find("public_transport") == "stop_position"
 		railwayTag := o.Tags.Find("railway")
 		if railwayTag == "" {
 			break
 		}
 
-		isRailwayStop := railwayTag == "halt" || railwayTag == "station"
+		isRailwayStation := railwayTag == "halt" || railwayTag == "station"
+		isRailwayStop := railwayTag == "stop"
+		isTrain := o.Tags.Find("train") == "yes"
 
-		if isStation && isRailwayStop {
+		if isStation && isRailwayStation {
 			elementID := o.ID
 			i.stations[int64(elementID)] = station{
 				id:        int64(elementID),
@@ -144,6 +154,19 @@ func (i *countryImporter) parseOsmData(scanner *osmpbf.Scanner) {
 				operator:  o.Tags.Find("operator"),
 				wikidata:  o.Tags.Find("wikidata"),
 				wikipedia: o.Tags.Find("wikipedia"),
+			}
+		}
+
+		if isTrain && isStopPosition && isRailwayStop {
+			ref := o.Tags.Find("ref")
+			localRef := o.Tags.Find("local_ref")
+			position := ref
+			if localRef != "" {
+				position = localRef
+			}
+			i.stopPositions[int64(o.ID)] = stopPosition{
+				id:       int64(o.ID),
+				position: position,
 			}
 		}
 	case *osm.Way:
@@ -207,6 +230,7 @@ func (i *countryImporter) saveStations() {
 	for _, sa := range i.stopAreas {
 		var stopAreaStation station
 		var stopAreaPlatforms []platform
+		var stopAreaStopPositions []stopPosition
 		for _, m := range sa.members {
 			s := i.stations[m]
 			if s != (station{}) {
@@ -216,6 +240,10 @@ func (i *countryImporter) saveStations() {
 			if p != (platform{}) {
 				stopAreaPlatforms = append(stopAreaPlatforms, p)
 			}
+			sp := i.stopPositions[m]
+			if sp != (stopPosition{}) {
+				stopAreaStopPositions = append(stopAreaStopPositions, sp)
+			}
 		}
 
 		if stopAreaStation == (station{}) {
@@ -223,6 +251,7 @@ func (i *countryImporter) saveStations() {
 		}
 
 		bahnStation := i.osmImporter.stationRepo.Get(uint(stopAreaStation.id))
+        bahnStation.Tracks = len(stopAreaStopPositions)
 		for _, sap := range stopAreaPlatforms {
 			bahnStation.Platforms = append(bahnStation.Platforms, stationRepo.Platform{
 				Model:     gorm.Model{ID: uint(sap.id)},

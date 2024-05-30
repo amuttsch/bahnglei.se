@@ -1,0 +1,23 @@
+# fly.toml app configuration file generated for bahngleise on 2024-05-30T21:43:36+02:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'bahngleise'
+primary_region = 'ams'
+
+[build]
+
+[processes]
+  app = "/app/bahngleise serve"
+
+[http_service]
+  internal_port = 1323
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[[vm]]
+  size = 'shared-cpu-1x'

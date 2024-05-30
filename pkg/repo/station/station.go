@@ -28,6 +28,7 @@ type Station struct {
 	Operator  string
 	Wikidata  string
 	Wikipedia string
+	Tracks    int
 	Platforms []Platform
 }
 

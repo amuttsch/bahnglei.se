@@ -16,6 +16,7 @@ FROM scratch
 WORKDIR /app
 COPY --from=build /app/bahngleise /app/config.yml /app
 COPY --from=build /app/views/ /app/views/
+COPY --from=build /app/images/ /app/images/
 COPY --from=build /app/css/style.css /app/css/style.css
 
 EXPOSE 8080

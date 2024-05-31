@@ -35,6 +35,7 @@ type Station struct {
 type Repo interface {
 	Save(i *Station) error
 	Get(id uint) *Station
+	Search(term string) []Station
 }
 
 func New(db *gorm.DB, ctx context.Context) *stationRepo {
@@ -53,6 +54,12 @@ func (r *stationRepo) Save(i *Station) error {
 
 func (r *stationRepo) Get(id uint) *Station {
 	var station Station
-	r.db.WithContext(r.ctx).First(&station, id)
+	r.db.WithContext(r.ctx).Preload("Platforms").First(&station, id)
 	return &station
+}
+
+func (r *stationRepo) Search(term string) []Station {
+    var stations []Station
+    r.db.WithContext(r.ctx).Where("name ILIKE ?", "%" + term + "%").Order("tracks DESC").Find(&stations)
+	return stations
 }

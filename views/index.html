@@ -1,36 +1,25 @@
-<html>
-  <head>
-    <title>Bahnglei.se</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <script src="https://unpkg.com/htmx.org/dist/htmx.js"></script>
-    <link rel="stylesheet" href="/css/style.css" />
-  </head>
-  <body class="h-full">
-    <div class="h-full grid grid-rows-[auto_1fr_auto]">
-      <header class="p-8">This is the header</header>
-      <main class="p-8">
-        <p>
-          Main page content here, add more if you want to see the footer push
-          down.
-        </p>
-      </main>
-      {{ template "footer" }}
-    </div>
-    <script type="text/javascript">
-      document.addEventListener("DOMContentLoaded", (event) => {
-        document.body.addEventListener("htmx:beforeSwap", function (evt) {
-          if (evt.detail.xhr.status === 422) {
-            console.log("setting status to paint");
-            // allow 422 responses to swap as we are using this as a signal that
-            // a form was submitted with bad data and want to rerender with the
-            // errors
-            //
-            // set isError to false to avoid error logging in console
-            evt.detail.shouldSwap = true;
-            evt.detail.isError = false;
-          }
-        });
-      });
-    </script>
-  </body>
-</html>
+{{ template "base.html" . }} {{ define "content" }}
+<form
+  onkeydown="return event.key != 'Enter';"
+  hx-post="/station"
+  hx-trigger="keyup[target.value.length > 3] changed from:input delay:500ms"
+  hx-swap="innerHTML"
+  hx-target="#stationlist"
+  autocomplete="off"
+>
+  <input class="border border-black" type="text" name="station" />
+</form>
+{{ template "stationlist" . }}
+{{ end }}
+
+{{ block "stationlist" . }}
+<div id="stationlist">
+  <ul>
+    {{ range .Stations }}
+    <li>
+      <a href="/station/{{ .ID }}">{{ .Name }}</a>
+    </li>
+    {{ end }}
+  </ul>
+</div>
+{{ end }}

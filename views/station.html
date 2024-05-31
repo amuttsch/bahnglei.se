@@ -1,0 +1,10 @@
+{{ template "base.html" . }} {{ define "content" }}
+<div>
+  <span class="font-bold">{{ .Name }}</span>
+  <ul>
+    {{ range .Platforms }}
+    <li>{{ .Positions }}</li>
+    {{ end }}
+  </ul>
+</div>
+{{ end }}

@@ -14,8 +14,9 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o bahngleise
 FROM scratch
 
 WORKDIR /app
-COPY --from=build /app/bahngleise /app/bahngleise
-COPY --from=build /app/config.yml /app/config.yml
+COPY --from=build /app/bahngleise /app/config.yml /app
+COPY --from=build /app/views/ /app/views/
+COPY --from=build /app/css/style.css /app/css/style.css
 
 EXPOSE 8080
 

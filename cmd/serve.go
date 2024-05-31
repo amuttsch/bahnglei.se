@@ -2,12 +2,28 @@ package cmd
 
 import (
 	"crypto/subtle"
-	"net/http"
+	"io"
+	"text/template"
 
-	"github.com/labstack/echo/v4/middleware"
+	"github.com/amuttsch/bahnglei.se/pkg/http"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/spf13/cobra"
 )
+
+type Template struct {
+	tmpl *template.Template
+}
+
+func newTemplate() *Template {
+	return &Template{
+		tmpl: template.Must(template.ParseGlob("views/*.html")),
+	}
+}
+
+func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
+	return t.tmpl.ExecuteTemplate(w, name, data)
+}
 
 var serveCmd = &cobra.Command{
 	Use:   "serve",
@@ -15,6 +31,11 @@ var serveCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Do Stuff Here
 		e := echo.New()
+        e.Renderer = newTemplate()
+        e.Use(middleware.Logger())
+        e.Static("/images", "images")
+        e.Static("/css", "css")
+
 		e.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
 			// Be careful to use constant time comparison to prevent timing attacks
 			if subtle.ConstantTimeCompare([]byte(username), []byte("joe")) == 1 &&
@@ -23,9 +44,9 @@ var serveCmd = &cobra.Command{
 			}
 			return false, nil
 		}))
-		e.GET("/", func(c echo.Context) error {
-			return c.String(http.StatusOK, "Hello, World!")
-		})
+
+        http.Setup(e)
+
 		e.Logger.Fatal(e.Start(":1323"))
 	},
 }

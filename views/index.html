@@ -1,0 +1,36 @@
+<html>
+  <head>
+    <title>Bahnglei.se</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://unpkg.com/htmx.org/dist/htmx.js"></script>
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body class="h-full">
+    <div class="h-full grid grid-rows-[auto_1fr_auto]">
+      <header class="p-8">This is the header</header>
+      <main class="p-8">
+        <p>
+          Main page content here, add more if you want to see the footer push
+          down.
+        </p>
+      </main>
+      {{ template "footer" }}
+    </div>
+    <script type="text/javascript">
+      document.addEventListener("DOMContentLoaded", (event) => {
+        document.body.addEventListener("htmx:beforeSwap", function (evt) {
+          if (evt.detail.xhr.status === 422) {
+            console.log("setting status to paint");
+            // allow 422 responses to swap as we are using this as a signal that
+            // a form was submitted with bad data and want to rerender with the
+            // errors
+            //
+            // set isError to false to avoid error logging in console
+            evt.detail.shouldSwap = true;
+            evt.detail.isError = false;
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

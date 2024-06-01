@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"crypto/subtle"
+	"embed"
 	"io"
 	"os"
+    goHttp "net/http"
 	"strings"
 	"text/template"
 
@@ -18,20 +20,22 @@ import (
 	"gorm.io/gorm"
 )
 
+var AssetFS embed.FS
+
 type Template struct {
 	tmpl *template.Template
 }
 
 func newTemplate() *Template {
 	return &Template{
-		tmpl: template.Must(template.ParseGlob("views/*.html")),
+		tmpl: template.Must(template.ParseFS(AssetFS, "views/*.html")),
 	}
 }
 
 func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
 	if strings.HasSuffix(name, ".html") {
 		tmpl := template.Must(t.tmpl.Clone())
-		tmpl = template.Must(tmpl.ParseGlob("views/"+name))
+		tmpl = template.Must(tmpl.ParseFS(AssetFS, "views/" + name))
 		return tmpl.ExecuteTemplate(w, name, data)
 	}
 	return t.tmpl.ExecuteTemplate(w, name, data)
@@ -56,8 +60,18 @@ var serveCmd = &cobra.Command{
 		e := echo.New()
 		e.Renderer = newTemplate()
 		e.Use(middleware.Logger())
-		e.Static("/images", "images")
-		e.Static("/css", "css")
+		e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
+			HTML5:      true,
+			Root:       "images", // because files are located in `web` directory in `webAssets` fs
+			Filesystem: goHttp.FS(AssetFS),
+		}))
+		e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
+			HTML5:      true,
+			Root:       "css", // because files are located in `web` directory in `webAssets` fs
+			Filesystem: goHttp.FS(AssetFS),
+		}))
+//		e.Static("/images", "images")
+//		e.Static("/css", "css")
 
 		e.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
 			// Be careful to use constant time comparison to prevent timing attacks

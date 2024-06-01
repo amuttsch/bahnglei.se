@@ -1,7 +1,17 @@
 package main
 
-import "github.com/amuttsch/bahnglei.se/cmd"
+import (
+	"embed"
+
+	"github.com/amuttsch/bahnglei.se/cmd"
+)
+
+//go:embed views/*
+//go:embed images/*
+//go:embed css/*
+var assetFS embed.FS
 
 func main() {
-  cmd.Execute()
+	cmd.AssetFS = assetFS
+	cmd.Execute()
 }

@@ -7,14 +7,21 @@ import (
 )
 
 type CountryConfig struct {
-    Iso string
-    Name string
-    Url string
+	Iso  string
+	Name string
+	Url  string
+}
+
+type ThunderforestConfig struct {
+	ApiKey   string
+	Zoom     int
+	MapStyle string
 }
 
 type Config struct {
-	DatabaseUrl string
-    Countries []CountryConfig
+	DatabaseUrl         string
+	Countries           []CountryConfig
+	ThunderforestConfig ThunderforestConfig
 }
 
 func Read() *Config {
@@ -22,18 +29,19 @@ func Read() *Config {
 
 	viper.AddConfigPath(".")
 	viper.SetConfigName("config")
-    viper.BindEnv("DatabaseUrl", "DATABASE_URL")
+	viper.BindEnv("DatabaseUrl", "DATABASE_URL")
+	viper.BindEnv("ThunderforestConfig.ApiKey", "THUNDERFOREST_API_KEY")
 
 	err := viper.ReadInConfig()
 	if err != nil {
 		fmt.Printf("%v", err)
-        panic("Invalid config")
+		panic("Invalid config")
 	}
 
 	err = viper.Unmarshal(conf)
 	if err != nil {
 		fmt.Printf("unable to decode into config struct, %v", err)
-        panic("Invalid config")
+		panic("Invalid config")
 	}
 
 	return conf

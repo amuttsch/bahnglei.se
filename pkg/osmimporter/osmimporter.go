@@ -215,13 +215,13 @@ func (i *countryImporter) saveStations() {
 			Model: gorm.Model{
 				ID: uint(s.id),
 			},
-			Country:   i.country,
-			Name:      s.name,
-			Lat:       s.lat,
-			Lng:       s.lng,
-			Operator:  s.operator,
-			Wikidata:  s.wikidata,
-			Wikipedia: s.wikipedia,
+			Country:     i.country,
+			Name:        s.name,
+			Lat:         s.lat,
+			Lng:         s.lng,
+			Operator:    s.operator,
+			Wikidata:    s.wikidata,
+			Wikipedia:   s.wikipedia,
 		}
 
 		i.osmImporter.stationRepo.Save(&bahnStation)
@@ -251,7 +251,7 @@ func (i *countryImporter) saveStations() {
 		}
 
 		bahnStation := i.osmImporter.stationRepo.Get(uint(stopAreaStation.id))
-        bahnStation.Tracks = len(stopAreaStopPositions)
+		bahnStation.Tracks = len(stopAreaStopPositions)
 		for _, sap := range stopAreaPlatforms {
 			bahnStation.Platforms = append(bahnStation.Platforms, stationRepo.Platform{
 				Model:     gorm.Model{ID: uint(sap.id)},

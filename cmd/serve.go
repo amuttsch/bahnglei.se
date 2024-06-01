@@ -82,7 +82,7 @@ var serveCmd = &cobra.Command{
 			return false, nil
 		}))
 
-		http.Setup(e, stationRepo)
+		http.Setup(e, conf, stationRepo)
 
 		e.Logger.Fatal(e.Start(":1323"))
 	},

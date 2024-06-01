@@ -30,6 +30,7 @@ type Station struct {
 	Wikipedia string
 	Tracks    int
 	Platforms []Platform
+    OsmTile   []byte
 }
 
 type Repo interface {

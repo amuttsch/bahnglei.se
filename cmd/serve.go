@@ -62,16 +62,8 @@ var serveCmd = &cobra.Command{
 		e.Use(middleware.Logger())
 		e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
 			HTML5:      true,
-			Root:       "images", // because files are located in `web` directory in `webAssets` fs
 			Filesystem: goHttp.FS(AssetFS),
 		}))
-		e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
-			HTML5:      true,
-			Root:       "css", // because files are located in `web` directory in `webAssets` fs
-			Filesystem: goHttp.FS(AssetFS),
-		}))
-//		e.Static("/images", "images")
-//		e.Static("/css", "css")
 
 		e.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
 			// Be careful to use constant time comparison to prevent timing attacks

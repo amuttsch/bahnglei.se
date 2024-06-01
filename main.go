@@ -8,7 +8,7 @@ import (
 
 //go:embed views/*
 //go:embed images/*
-//go:embed css/*
+//go:embed css/style.css
 var assetFS embed.FS
 
 func main() {

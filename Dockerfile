@@ -2,6 +2,9 @@ FROM golang:1.22 as build
 
 WORKDIR /app
 
+RUN apt-get install -y ca-certificates
+RUN update-ca-certificates
+
 # Download Go modules
 COPY go.mod go.sum ./
 RUN go mod download
@@ -15,6 +18,7 @@ FROM scratch
 
 WORKDIR /app
 COPY --from=build /app/bahngleise /app/config.yml /app
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 EXPOSE 8080
 

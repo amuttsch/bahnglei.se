@@ -9,6 +9,7 @@ import (
 	"github.com/amuttsch/bahnglei.se/pkg/config"
 	stationRepo "github.com/amuttsch/bahnglei.se/pkg/repo/station"
 	"github.com/labstack/echo/v4"
+	"github.com/sirupsen/logrus"
 )
 
 type controller struct {
@@ -18,6 +19,11 @@ type controller struct {
 
 type StationListData struct {
 	Stations []stationRepo.Station
+}
+
+type StationData struct {
+    StationListData
+    Station *stationRepo.Station
 }
 
 func Setup(e *echo.Echo, config *config.Config, stationRepo stationRepo.Repo) *controller {
@@ -35,19 +41,24 @@ func Setup(e *echo.Echo, config *config.Config, stationRepo stationRepo.Repo) *c
 	e.GET("/station/:id", func(c echo.Context) error {
 		id, _ := strconv.Atoi(c.Param("id"))
 		station := stationRepo.Get(uint(id))
-		return c.Render(200, "station.html", station)
+		data := StationData{
+            StationListData: StationListData{},
+            Station: station,
+		}
+		return c.Render(200, "station.html", data)
 	})
 
 	e.GET("/station/:id/tile", func(c echo.Context) error {
 		id, _ := strconv.Atoi(c.Param("id"))
 		station := stationRepo.Get(uint(id))
 		if station.OsmTile != nil {
-			return c.Blob(200, "image/png", station.OsmTile)
+		//	return c.Blob(200, "image/png", station.OsmTile)
 		}
 
-		osmLink := fmt.Sprintf("https://tile.thunderforest.com/static/transport/%f,%f,16/800x600@2x.png?apikey=%s", station.Lng, station.Lat, config.ThunderforestConfig.ApiKey)
+		osmLink := fmt.Sprintf("https://tile.thunderforest.com/static/transport/%f,%f,17/800x600@2x.png?apikey=%s", station.Lng, station.Lat, config.ThunderforestConfig.ApiKey)
 		resp, err := http.Get(osmLink)
 		if err != nil {
+            logrus.Error(err)
 			return c.NoContent(502)
 		}
 
@@ -55,6 +66,7 @@ func Setup(e *echo.Echo, config *config.Config, stationRepo stationRepo.Repo) *c
 
 		image, err := io.ReadAll(resp.Body)
 		if err != nil {
+            logrus.Error(err)
 			return c.NoContent(502)
 		}
 		station.OsmTile = image

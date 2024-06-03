@@ -1,9 +1,12 @@
 {{ template "base.html" . }} {{ define "content" }}
+{{ template "search" . }}
 <div>
-  <span class="font-bold">{{ .Name }}</span>
-  <img src="/station/{{ .ID }}/tile" />
+  <span class="font-bold">{{ .Station.Name }}</span>
+  <img src="/station/{{ .Station.ID }}/tile" />
   <ul>
-    {{ range .Platforms }}
+    <span>Number of tracks: {{ .Station.Tracks }}</span>
+    <h2 class="font-bold">Platforms and tracks</h2>
+    {{ range .Station.Platforms }}
     <li>{{ .Positions }}</li>
     {{ end }}
   </ul>

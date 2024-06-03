@@ -1,0 +1,25 @@
+{{ block "search" . }}
+<form
+  onkeydown="return event.key != 'Enter';"
+  hx-post="/station"
+  hx-trigger="keyup[target.value.length > 3] changed from:input delay:500ms"
+  hx-swap="innerHTML"
+  hx-target="#stationlist"
+  autocomplete="off"
+>
+  <input class="border border-black" type="text" name="station" placeholder="Enter station" />
+</form>
+{{ template "stationlist" . }}
+{{ end }}
+
+{{ block "stationlist" . }}
+<div id="stationlist">
+  <ul>
+    {{ range .Stations }}
+    <li>
+      <a href="/station/{{ .ID }}">{{ .Name }}</a>
+    </li>
+    {{ end }}
+  </ul>
+</div>
+{{ end }}

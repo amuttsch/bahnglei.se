@@ -18,19 +18,28 @@ type Platform struct {
 	Positions string
 }
 
-type Station struct {
+type StopPosition struct {
 	gorm.Model
-	Country   country.Country
-	CountryID string
-	Name      string
+	StationID uint
+	Platform  string
 	Lat       float64
 	Lng       float64
-	Operator  string
-	Wikidata  string
-	Wikipedia string
-	Tracks    int
-	Platforms []Platform
-    OsmTile   []byte
+}
+
+type Station struct {
+	gorm.Model
+	Country      country.Country
+	CountryID    string
+	Name         string
+	Lat          float64
+	Lng          float64
+	Operator     string
+	Wikidata     string
+	Wikipedia    string
+	Tracks       int
+	Platforms    []Platform
+	StopPosition []StopPosition
+	OsmTile      []byte
 }
 
 type Repo interface {
@@ -40,7 +49,7 @@ type Repo interface {
 }
 
 func New(db *gorm.DB, ctx context.Context) *stationRepo {
-	db.AutoMigrate(&Station{}, &Platform{})
+	db.AutoMigrate(&Station{}, &Platform{}, &StopPosition{})
 
 	return &stationRepo{
 		db:  db,
@@ -55,12 +64,12 @@ func (r *stationRepo) Save(i *Station) error {
 
 func (r *stationRepo) Get(id uint) *Station {
 	var station Station
-	r.db.WithContext(r.ctx).Preload("Platforms").First(&station, id)
+	r.db.WithContext(r.ctx).Preload("Platforms").Preload("StopPosition").First(&station, id)
 	return &station
 }
 
 func (r *stationRepo) Search(term string) []Station {
-    var stations []Station
-    r.db.WithContext(r.ctx).Where("name ILIKE ?", "%" + term + "%").Order("tracks DESC").Find(&stations)
+	var stations []Station
+	r.db.WithContext(r.ctx).Where("name ILIKE ?", "%"+term+"%").Order("tracks DESC").Find(&stations)
 	return stations
 }

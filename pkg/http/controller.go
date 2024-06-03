@@ -75,6 +75,27 @@ func Setup(e *echo.Echo, config *config.Config, stationRepo stationRepo.Repo) *c
 		return c.Blob(200, "image/png", station.OsmTile)
 	})
 
+    e.GET("/tile/:z/:x/:y", func(c echo.Context) error {
+		z := c.Param("z")
+		x := c.Param("x")
+		y := c.Param("y")
+		osmLink := fmt.Sprintf("https://tile.thunderforest.com/transport/%s/%s/%s?apikey=%s", z, x, y, config.ThunderforestConfig.ApiKey)
+		resp, err := http.Get(osmLink)
+		if err != nil {
+            logrus.Error(err)
+			return c.NoContent(502)
+		}
+
+		defer resp.Body.Close()
+
+		image, err := io.ReadAll(resp.Body)
+		if err != nil {
+            logrus.Error(err)
+			return c.NoContent(502)
+		}
+		return c.Blob(200, "image/png", image)
+	})
+
 	return &controller{
 		e:      e,
 		config: config,

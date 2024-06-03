@@ -42,6 +42,8 @@ type platform struct {
 type stopPosition struct {
 	id       int64
 	position string
+	lat      float64
+	lng      float64
 }
 
 type stopArea struct {
@@ -167,6 +169,8 @@ func (i *countryImporter) parseOsmData(scanner *osmpbf.Scanner) {
 			i.stopPositions[int64(o.ID)] = stopPosition{
 				id:       int64(o.ID),
 				position: position,
+				lat:      o.Lat,
+				lng:      o.Lon,
 			}
 		}
 	case *osm.Way:
@@ -215,13 +219,13 @@ func (i *countryImporter) saveStations() {
 			Model: gorm.Model{
 				ID: uint(s.id),
 			},
-			Country:     i.country,
-			Name:        s.name,
-			Lat:         s.lat,
-			Lng:         s.lng,
-			Operator:    s.operator,
-			Wikidata:    s.wikidata,
-			Wikipedia:   s.wikipedia,
+			Country:   i.country,
+			Name:      s.name,
+			Lat:       s.lat,
+			Lng:       s.lng,
+			Operator:  s.operator,
+			Wikidata:  s.wikidata,
+			Wikipedia: s.wikipedia,
 		}
 
 		i.osmImporter.stationRepo.Save(&bahnStation)
@@ -256,6 +260,14 @@ func (i *countryImporter) saveStations() {
 			bahnStation.Platforms = append(bahnStation.Platforms, stationRepo.Platform{
 				Model:     gorm.Model{ID: uint(sap.id)},
 				Positions: sap.positions,
+			})
+		}
+		for _, sp := range stopAreaStopPositions {
+			bahnStation.StopPosition = append(bahnStation.StopPosition, stationRepo.StopPosition{
+				Model:    gorm.Model{ID: uint(sp.id)},
+				Platform: sp.position,
+				Lat:      sp.lat,
+				Lng:      sp.lng,
 			})
 		}
 

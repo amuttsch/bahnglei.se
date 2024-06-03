@@ -2,3 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+.z-force {
+    z-Index: 50 !important;
+}
+

@@ -3,3 +3,5 @@ countries:
   - iso: DE
     name: Germany
     url: http://localhost:8100/germany-latest.osm.pbf
+    #url: https://download.geofabrik.de/europe/germany-latest.osm.pbf
+

@@ -4,18 +4,22 @@ import (
 	"crypto/subtle"
 	"embed"
 	"io"
+	goHttp "net/http"
 	"os"
-    goHttp "net/http"
+	"regexp"
+	"strconv"
 	"strings"
 	"text/template"
 
 	"github.com/amuttsch/bahnglei.se/pkg/config"
 	"github.com/amuttsch/bahnglei.se/pkg/http"
+	"github.com/amuttsch/bahnglei.se/pkg/repo/station"
 	stationRepo "github.com/amuttsch/bahnglei.se/pkg/repo/station"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"golang.org/x/exp/slices"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -27,15 +31,26 @@ type Template struct {
 }
 
 func newTemplate() *Template {
+        funcMap := template.FuncMap{
+            "sortStopPositions": func(slice []station.StopPosition) []station.StopPosition {
+                slices.SortFunc(slice, func(i station.StopPosition, j station.StopPosition) int {
+                    r := regexp.MustCompile("[^0-9]")
+                    iPlatform, _ := strconv.Atoi(r.ReplaceAllString(i.Platform, ""))
+                    jPlatform, _ := strconv.Atoi(r.ReplaceAllString(j.Platform, ""))
+                    return iPlatform - jPlatform
+                })
+                return slice
+            },
+        }
 	return &Template{
-		tmpl: template.Must(template.ParseFS(AssetFS, "views/*.html")),
+		tmpl: template.Must(template.New("").Funcs(funcMap).ParseFS(AssetFS, "views/*.html")).Funcs(funcMap),
 	}
 }
 
 func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
 	if strings.HasSuffix(name, ".html") {
 		tmpl := template.Must(t.tmpl.Clone())
-		tmpl = template.Must(tmpl.ParseFS(AssetFS, "views/" + name))
+		tmpl = template.Must(tmpl.ParseFS(AssetFS, "views/"+name))
 		return tmpl.ExecuteTemplate(w, name, data)
 	}
 	return t.tmpl.ExecuteTemplate(w, name, data)

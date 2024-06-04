@@ -2,7 +2,7 @@
 <div>
   <span class="font-bold">{{ .Station.Name }}</span>
   <div class="flex flex-row flex-wrap">
-    {{ range .Station.StopPosition }}
+    {{ range sortStopPositions .Station.StopPosition }}
     <button
       class="border border-white w-8 h-8 font-bold bg-[#1455C0] text-white text-lg text-center"
       _="on click send track(platform: '{{ .Platform }}') to .track-marker"

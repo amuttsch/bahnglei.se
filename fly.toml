@@ -21,3 +21,9 @@ primary_region = 'ams'
 
 [[vm]]
   size = 'shared-cpu-1x'
+
+[[metrics]]
+port = 9091
+path = "/metrics"
+processes = ["app"]
+

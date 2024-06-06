@@ -3,6 +3,7 @@ package cmd
 import (
 	"crypto/subtle"
 	"embed"
+	"errors"
 	"io"
 	goHttp "net/http"
 	"os"
@@ -15,6 +16,7 @@ import (
 	"github.com/amuttsch/bahnglei.se/pkg/http"
 	"github.com/amuttsch/bahnglei.se/pkg/repo/station"
 	stationRepo "github.com/amuttsch/bahnglei.se/pkg/repo/station"
+	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	log "github.com/sirupsen/logrus"
@@ -31,17 +33,17 @@ type Template struct {
 }
 
 func newTemplate() *Template {
-        funcMap := template.FuncMap{
-            "sortStopPositions": func(slice []station.StopPosition) []station.StopPosition {
-                slices.SortFunc(slice, func(i station.StopPosition, j station.StopPosition) int {
-                    r := regexp.MustCompile("[^0-9]")
-                    iPlatform, _ := strconv.Atoi(r.ReplaceAllString(i.Platform, ""))
-                    jPlatform, _ := strconv.Atoi(r.ReplaceAllString(j.Platform, ""))
-                    return iPlatform - jPlatform
-                })
-                return slice
-            },
-        }
+	funcMap := template.FuncMap{
+		"sortStopPositions": func(slice []station.StopPosition) []station.StopPosition {
+			slices.SortFunc(slice, func(i station.StopPosition, j station.StopPosition) int {
+				r := regexp.MustCompile("[^0-9]")
+				iPlatform, _ := strconv.Atoi(r.ReplaceAllString(i.Platform, ""))
+				jPlatform, _ := strconv.Atoi(r.ReplaceAllString(j.Platform, ""))
+				return iPlatform - jPlatform
+			})
+			return slice
+		},
+	}
 	return &Template{
 		tmpl: template.Must(template.New("").Funcs(funcMap).ParseFS(AssetFS, "views/*.html")).Funcs(funcMap),
 	}
@@ -79,6 +81,7 @@ var serveCmd = &cobra.Command{
 			HTML5:      true,
 			Filesystem: goHttp.FS(AssetFS),
 		}))
+		e.Use(echoprometheus.NewMiddleware("bahngleise"))
 
 		e.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
 			// Be careful to use constant time comparison to prevent timing attacks
@@ -90,6 +93,14 @@ var serveCmd = &cobra.Command{
 		}))
 
 		http.Setup(e, conf, stationRepo)
+
+		go func() {
+			metrics := echo.New()                                // this Echo will run on separate port 8081
+			metrics.GET("/metrics", echoprometheus.NewHandler()) // adds route to serve gathered metrics
+			if err := metrics.Start(":9091"); err != nil && !errors.Is(err, goHttp.ErrServerClosed) {
+				log.Fatal(err)
+			}
+		}()
 
 		e.Logger.Fatal(e.Start(":1323"))
 	},

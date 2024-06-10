@@ -42,9 +42,12 @@ func newTemplate() *Template {
 			})
 			return slice
 		},
-    "splitString": func(s string, sep string) []string {
-      return strings.Split(s, sep)
-    },
+		"splitString": func(s string, sep string) []string {
+			return strings.Split(s, sep)
+		},
+		"replaceSpace": func(s string) string {
+			return strings.ReplaceAll(s, " ", "-")
+		},
 	}
 	return &Template{
 		tmpl: template.Must(template.New("").Funcs(funcMap).ParseFS(AssetFS, "views/*.html")).Funcs(funcMap),

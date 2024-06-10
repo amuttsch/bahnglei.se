@@ -15,6 +15,7 @@
               end
               on click 
                 send hide to .track-marker
+            send track(platform: '{{ .Platform }}') to .track-marker
           {{ range splitString .Neighbors ";" }}
             send track(platform: '{{ . }}') to .track-marker
           {{ end }}
@@ -45,13 +46,13 @@
                 html: `
           <div _="on track[platform=='{{ .Platform }}']
                     transition opacity to 1
-                    then remove .hidden from #track-marker-{{ .Platform }}
+                    then remove .hidden from #track-marker-{{ replaceSpace .Platform }}
                   end on hide
                     transition opacity to 0.2
-                    then add .hidden to #track-marker-{{ .Platform }}
+                    then add .hidden to #track-marker-{{ replaceSpace .Platform }}
                   end" class="track-marker relative">
             <div class="absolute block -left-2 -top-2 h-4 w-4 rounded-full bg-red-500"></div>
-            <div id="track-marker-{{ .Platform }}" class="hidden border border-white w-8 h-8 font-bold bg-[#1455C0] text-white text-lg text-center\">{{ .Platform }}</div>
+            <div id="track-marker-{{ replaceSpace .Platform }}" class="hidden border border-white w-8 h-8 font-bold bg-[#1455C0] text-white text-lg text-center\">{{ .Platform }}</div>
           <div>
           `
         })

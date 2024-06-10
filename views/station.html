@@ -14,7 +14,7 @@
                 transition opacity to 0.2
               end
               on click 
-                send hide 
+                send hide to .track-marker
           {{ range splitString .Neighbors ";" }}
             send track(platform: '{{ . }}') to .track-marker
           {{ end }}

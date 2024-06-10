@@ -1,0 +1,5 @@
+databaseUrl: postgres://postgres:postgres@localhost:5432/bahngleise?sslmode=disable
+countries:
+  - iso: DE
+    name: Germany
+    url: https://download.geofabrik.de/europe/germany-latest.osm.pbf

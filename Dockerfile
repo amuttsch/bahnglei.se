@@ -17,7 +17,8 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o bahngleise
 FROM scratch
 
 WORKDIR /app
-COPY --from=build /app/bahngleise /app/config.yml /app
+COPY --from=build /app/bahngleise /app/bahngleise
+COPY --from=build /app/config.fly.yml /app/config.yml 
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 EXPOSE 8080

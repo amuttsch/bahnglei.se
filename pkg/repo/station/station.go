@@ -24,7 +24,7 @@ type StopPosition struct {
 	Platform  string
 	Lat       float64
 	Lng       float64
-  Neighbors string
+	Neighbors string
 }
 
 type Station struct {
@@ -47,6 +47,7 @@ type Repo interface {
 	Save(i *Station) error
 	Get(id uint) *Station
 	Search(term string) []Station
+	Count() int64
 }
 
 func New(db *gorm.DB, ctx context.Context) *stationRepo {
@@ -73,4 +74,10 @@ func (r *stationRepo) Search(term string) []Station {
 	var stations []Station
 	r.db.WithContext(r.ctx).Where("name ILIKE ?", "%"+term+"%").Order("tracks DESC").Find(&stations)
 	return stations
+}
+
+func (r *stationRepo) Count() int64 {
+	var count int64
+	r.db.WithContext(r.ctx).Table("stations").Count(&count)
+	return count
 }

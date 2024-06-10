@@ -14,6 +14,7 @@ import (
 
 	"github.com/amuttsch/bahnglei.se/pkg/config"
 	"github.com/amuttsch/bahnglei.se/pkg/http"
+	"github.com/amuttsch/bahnglei.se/pkg/repo/country"
 	stationRepo "github.com/amuttsch/bahnglei.se/pkg/repo/station"
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
@@ -77,6 +78,7 @@ var serveCmd = &cobra.Command{
 		}
 
 		context := cmd.Context()
+		countryRepo := country.New(db, context)
 		stationRepo := stationRepo.New(db, context)
 
 		e := echo.New()
@@ -97,7 +99,7 @@ var serveCmd = &cobra.Command{
 			return false, nil
 		}))
 
-		http.Setup(e, conf, stationRepo)
+		http.Setup(e, conf, countryRepo, stationRepo)
 
 		go func() {
 			metrics := echo.New()                                // this Echo will run on separate port 8081

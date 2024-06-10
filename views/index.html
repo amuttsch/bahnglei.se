@@ -1,10 +1,10 @@
-{{ template "base.html" . }} {{ define "content" }}
-{{ template "search" . }}
-<div>
+{{ template "base.html" . }}
+{{ define "content" }}
+  {{ template "search" . }}
+  <div>
     <ul>
-        <li>1 Country</li>
-        <li>7000 stations</li>
+      <li>{{ .CountryCount }} countries</li>
+      <li>{{ .StationCount }} stations</li>
     </ul>
-</div>
+  </div>
 {{ end }}
-

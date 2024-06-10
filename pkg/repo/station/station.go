@@ -24,6 +24,7 @@ type StopPosition struct {
 	Platform  string
 	Lat       float64
 	Lng       float64
+  Neighbors string
 }
 
 type Station struct {

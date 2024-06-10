@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"runtime"
+	"strings"
 
 	"github.com/amuttsch/bahnglei.se/pkg/config"
 	"github.com/amuttsch/bahnglei.se/pkg/repo/country"
@@ -13,6 +14,7 @@ import (
 	"github.com/paulmach/osm"
 	"github.com/paulmach/osm/osmpbf"
 	"gorm.io/gorm"
+      "github.com/samber/lo"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -256,18 +258,24 @@ func (i *countryImporter) saveStations() {
 
 		bahnStation := i.osmImporter.stationRepo.Get(uint(stopAreaStation.id))
 		bahnStation.Tracks = len(stopAreaStopPositions)
+    positions := make([][]string, 3)
 		for _, sap := range stopAreaPlatforms {
 			bahnStation.Platforms = append(bahnStation.Platforms, stationRepo.Platform{
 				Model:     gorm.Model{ID: uint(sap.id)},
 				Positions: sap.positions,
 			})
+      positions = append(positions, strings.Split(sap.positions, ";"))
 		}
 		for _, sp := range stopAreaStopPositions {
+      neighbors, _ := lo.Find(positions, func(p []string) bool {
+          return lo.Contains(p, sp.position)
+      })
 			bahnStation.StopPosition = append(bahnStation.StopPosition, stationRepo.StopPosition{
 				Model:    gorm.Model{ID: uint(sp.id)},
 				Platform: sp.position,
 				Lat:      sp.lat,
 				Lng:      sp.lng,
+        Neighbors: strings.Join(neighbors, ";"),
 			})
 		}
 

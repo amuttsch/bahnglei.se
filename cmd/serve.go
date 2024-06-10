@@ -14,7 +14,6 @@ import (
 
 	"github.com/amuttsch/bahnglei.se/pkg/config"
 	"github.com/amuttsch/bahnglei.se/pkg/http"
-	"github.com/amuttsch/bahnglei.se/pkg/repo/station"
 	stationRepo "github.com/amuttsch/bahnglei.se/pkg/repo/station"
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
@@ -34,8 +33,8 @@ type Template struct {
 
 func newTemplate() *Template {
 	funcMap := template.FuncMap{
-		"sortStopPositions": func(slice []station.StopPosition) []station.StopPosition {
-			slices.SortFunc(slice, func(i station.StopPosition, j station.StopPosition) int {
+		"sortStopPositions": func(slice []stationRepo.StopPosition) []stationRepo.StopPosition {
+			slices.SortFunc(slice, func(i stationRepo.StopPosition, j stationRepo.StopPosition) int {
 				r := regexp.MustCompile("[^0-9]")
 				iPlatform, _ := strconv.Atoi(r.ReplaceAllString(i.Platform, ""))
 				jPlatform, _ := strconv.Atoi(r.ReplaceAllString(j.Platform, ""))
@@ -43,6 +42,9 @@ func newTemplate() *Template {
 			})
 			return slice
 		},
+    "splitString": func(s string, sep string) []string {
+      return strings.Split(s, sep)
+    },
 	}
 	return &Template{
 		tmpl: template.Must(template.New("").Funcs(funcMap).ParseFS(AssetFS, "views/*.html")).Funcs(funcMap),

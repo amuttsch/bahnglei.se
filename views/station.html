@@ -6,10 +6,15 @@
     <div class="flex flex-row flex-wrap">
       {{ range sortStopPositions .Station.StopPosition }}
         <button
-          class="border border-white w-8 h-8 font-bold bg-[#1455C0] text-white text-lg text-center"
+          class="track-marker border border-white w-8 h-8 font-bold bg-[#1455C0] text-white text-lg text-center"
           _="
+              on track[platform=='{{ .Platform }}']
+                transition opacity to 1
+              end on hide
+                transition opacity to 0.2
+              end
               on click 
-                send hide to .track-marker
+                send hide 
           {{ range splitString .Neighbors ";" }}
             send track(platform: '{{ . }}') to .track-marker
           {{ end }}

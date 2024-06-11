@@ -12,16 +12,21 @@ func Degrees(rad float64) float64 {
 	return rad * 180 / math.Pi
 }
 
-func Y2lat(y float64) float64 {
-	return Degrees(2*math.Atan(math.Exp(y/R)) - math.Pi/2)
+func Y2lat(ty float64, zoom int8) float64 {
+	y := ty / math.Pow(2, float64(zoom))
+	l := (1 - 2*y) * math.Pi
+	o := math.Atan(math.Sinh(l))
+	return Degrees(o)
 }
 
 func Lat2y(lat float64) float64 {
 	return R * math.Log(math.Tan(math.Pi/4+Radians(lat)/2))
 }
 
-func X2lon(x float64) float64 {
-	return Degrees(x / R)
+func X2lon(tx float64, zoom int8) float64 {
+	x := tx / math.Pow(2, float64(zoom))
+	l := (2*x - 1) * math.Pi
+	return Degrees(l)
 }
 
 func Lon2x(lon float64) float64 {
@@ -38,7 +43,7 @@ func Distance(lat1 float64, lon1 float64, lat2 float64, lon2 float64) float64 {
 	a := math.Sin(deltaLatRad/2)*math.Sin(deltaLatRad/2) +
 		lat1Rad*lat2Rad*math.Sin(deltaLonRad/2)*math.Sin(deltaLonRad/2)
 
-    c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
+	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
 
 	return R * c
 }

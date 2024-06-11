@@ -1,9 +1,9 @@
-package importer
+package osmimporter
 
 import (
 	"context"
 
-	"github.com/amuttsch/bahnglei.se/pkg/repo/country"
+	"github.com/amuttsch/bahnglei.se/pkg/country"
 	"gorm.io/gorm"
 )
 
@@ -12,7 +12,7 @@ type importerRepo struct {
 	ctx context.Context
 }
 
-type ImporterModel struct {
+type ImportState struct {
 	gorm.Model
 	Country         country.Country
 	CountryID       string
@@ -22,11 +22,11 @@ type ImporterModel struct {
 }
 
 type Repo interface {
-	Save(i *ImporterModel) error
+	Save(i *ImportState) error
 }
 
-func New(db *gorm.DB, ctx context.Context) *importerRepo {
-	db.AutoMigrate(&ImporterModel{})
+func NewRepo(db *gorm.DB, ctx context.Context) *importerRepo {
+	db.AutoMigrate(&ImportState{})
 
 	return &importerRepo{
 		db:  db,
@@ -34,7 +34,7 @@ func New(db *gorm.DB, ctx context.Context) *importerRepo {
 	}
 }
 
-func (r *importerRepo) Save(i *ImporterModel) error {
+func (r *importerRepo) Save(i *ImportState) error {
 	result := r.db.WithContext(r.ctx).Save(&i)
 	return result.Error
 }

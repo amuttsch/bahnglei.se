@@ -9,10 +9,9 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/amuttsch/bahnglei.se/pkg/config"
+	"github.com/amuttsch/bahnglei.se/pkg/country"
 	"github.com/amuttsch/bahnglei.se/pkg/osmimporter"
-	"github.com/amuttsch/bahnglei.se/pkg/repo/country"
-	importerRepo "github.com/amuttsch/bahnglei.se/pkg/repo/importer"
-	stationRepo "github.com/amuttsch/bahnglei.se/pkg/repo/station"
+	"github.com/amuttsch/bahnglei.se/pkg/station"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -21,8 +20,8 @@ var importCmd = &cobra.Command{
 	Short: "Import OSM railway data",
 	Long:  `Load OSM data given from the config file and parse the railway station data.`,
 	Run: func(cmd *cobra.Command, args []string) {
-        log.Infoln("Starting OSM importer")
-        conf := config.Read()
+		log.Infoln("Starting OSM importer")
+		conf := config.Read()
 
 		// Do Stuff Here
 		db, err := gorm.Open(postgres.Open(conf.DatabaseUrl))
@@ -31,15 +30,15 @@ var importCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-        context := cmd.Context()
-        countryRepo := country.New(db, context)
-        importRepo := importerRepo.New(db, context)
-        stationRepo := stationRepo.New(db, context)
+		context := cmd.Context()
+		countryRepo := country.NewRepo(db, context)
+		importRepo := osmimporter.NewRepo(db, context)
+		stationRepo := station.NewRepo(db, context)
 
-        osmImporter := osmimporter.New(conf, countryRepo, importRepo, stationRepo)
-        osmImporter.Import()
+		osmImporter := osmimporter.New(conf, countryRepo, importRepo, stationRepo)
+		osmImporter.Import()
 
-        log.Infoln("Finished importing OSM data")
+		log.Infoln("Finished importing OSM data")
 	},
 }
 

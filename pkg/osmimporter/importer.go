@@ -8,13 +8,12 @@ import (
 	"strings"
 
 	"github.com/amuttsch/bahnglei.se/pkg/config"
-	"github.com/amuttsch/bahnglei.se/pkg/repo/country"
-	importerRepo "github.com/amuttsch/bahnglei.se/pkg/repo/importer"
-	stationRepo "github.com/amuttsch/bahnglei.se/pkg/repo/station"
+	"github.com/amuttsch/bahnglei.se/pkg/country"
+	"github.com/amuttsch/bahnglei.se/pkg/station"
 	"github.com/paulmach/osm"
 	"github.com/paulmach/osm/osmpbf"
+	"github.com/samber/lo"
 	"gorm.io/gorm"
-      "github.com/samber/lo"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -22,11 +21,11 @@ import (
 type osmImporter struct {
 	config       *config.Config
 	countryRepo  country.Repo
-	importerRepo importerRepo.Repo
-	stationRepo  stationRepo.Repo
+	importerRepo Repo
+	stationRepo  station.Repo
 }
 
-type station struct {
+type osmStation struct {
 	id        int64
 	name      string
 	lat       float64
@@ -36,24 +35,24 @@ type station struct {
 	wikipedia string
 }
 
-type platform struct {
+type osmPlatform struct {
 	id        int64
 	positions string
 }
 
-type stopPosition struct {
+type osmStopPosition struct {
 	id       int64
 	position string
 	lat      float64
 	lng      float64
 }
 
-type stopArea struct {
+type osmStopArea struct {
 	id      int
 	members []int64
 }
 
-func New(config *config.Config, countryRepo country.Repo, importerRepo importerRepo.Repo, ststationRepo stationRepo.Repo) *osmImporter {
+func New(config *config.Config, countryRepo country.Repo, importerRepo Repo, ststationRepo station.Repo) *osmImporter {
 	return &osmImporter{
 		countryRepo:  countryRepo,
 		importerRepo: importerRepo,
@@ -74,10 +73,10 @@ func (i *osmImporter) Import() {
 		ci := countryImporter{
 			country:       country,
 			osmImporter:   i,
-			stations:      make(map[int64]station),
-			platforms:     make(map[int64]platform),
-			stopPositions: make(map[int64]stopPosition),
-			stopAreas:     []stopArea{},
+			stations:      make(map[int64]osmStation),
+			platforms:     make(map[int64]osmPlatform),
+			stopPositions: make(map[int64]osmStopPosition),
+			stopAreas:     []osmStopArea{},
 		}
 		ci.importCountry()
 	}
@@ -86,14 +85,14 @@ func (i *osmImporter) Import() {
 type countryImporter struct {
 	country       country.Country
 	osmImporter   *osmImporter
-	stations      map[int64]station
-	platforms     map[int64]platform
-	stopPositions map[int64]stopPosition
-	stopAreas     []stopArea
+	stations      map[int64]osmStation
+	platforms     map[int64]osmPlatform
+	stopPositions map[int64]osmStopPosition
+	stopAreas     []osmStopArea
 }
 
 func (i *countryImporter) importCountry() {
-	importerState := importerRepo.ImporterModel{
+	importerState := ImportState{
 		Country:         i.country,
 		State:           "started",
 		NumberStations:  0,
@@ -150,7 +149,7 @@ func (i *countryImporter) parseOsmData(scanner *osmpbf.Scanner) {
 
 		if isStation && isRailwayStation {
 			elementID := o.ID
-			i.stations[int64(elementID)] = station{
+			i.stations[int64(elementID)] = osmStation{
 				id:        int64(elementID),
 				name:      o.Tags.Find("name"),
 				lat:       o.Lat,
@@ -168,7 +167,7 @@ func (i *countryImporter) parseOsmData(scanner *osmpbf.Scanner) {
 			if localRef != "" {
 				position = localRef
 			}
-			i.stopPositions[int64(o.ID)] = stopPosition{
+			i.stopPositions[int64(o.ID)] = osmStopPosition{
 				id:       int64(o.ID),
 				position: position,
 				lat:      o.Lat,
@@ -181,7 +180,7 @@ func (i *countryImporter) parseOsmData(scanner *osmpbf.Scanner) {
 		isPlatform := o.Tags.Find("public_transport") == "platform" || o.Tags.Find("railway") == "platform"
 
 		if isTrain && isPlatform {
-			i.platforms[int64(o.ID)] = platform{
+			i.platforms[int64(o.ID)] = osmPlatform{
 				id:        int64(o.ID),
 				positions: ref,
 			}
@@ -196,7 +195,7 @@ func (i *countryImporter) parseOsmData(scanner *osmpbf.Scanner) {
 		isPlatform := o.Tags.Find("public_transport") == "platform" || o.Tags.Find("railway") == "platform"
 
 		if isTrain && isPlatform {
-			i.platforms[int64(o.ID)] = platform{
+			i.platforms[int64(o.ID)] = osmPlatform{
 				id:        int64(o.ID),
 				positions: ref,
 			}
@@ -207,7 +206,7 @@ func (i *countryImporter) parseOsmData(scanner *osmpbf.Scanner) {
 			for _, member := range o.Members {
 				members = append(members, member.Ref)
 			}
-			i.stopAreas = append(i.stopAreas, stopArea{
+			i.stopAreas = append(i.stopAreas, osmStopArea{
 				id:      int(o.ID),
 				members: members,
 			})
@@ -217,7 +216,7 @@ func (i *countryImporter) parseOsmData(scanner *osmpbf.Scanner) {
 
 func (i *countryImporter) saveStations() {
 	for _, s := range i.stations {
-		bahnStation := stationRepo.Station{
+		bahnStation := station.Station{
 			Model: gorm.Model{
 				ID: uint(s.id),
 			},
@@ -234,48 +233,48 @@ func (i *countryImporter) saveStations() {
 	}
 
 	for _, sa := range i.stopAreas {
-		var stopAreaStation station
-		var stopAreaPlatforms []platform
-		var stopAreaStopPositions []stopPosition
+		var stopAreaStation osmStation
+		var stopAreaPlatforms []osmPlatform
+		var stopAreaStopPositions []osmStopPosition
 		for _, m := range sa.members {
 			s := i.stations[m]
-			if s != (station{}) {
+			if s != (osmStation{}) {
 				stopAreaStation = s
 			}
 			p := i.platforms[m]
-			if p != (platform{}) {
+			if p != (osmPlatform{}) {
 				stopAreaPlatforms = append(stopAreaPlatforms, p)
 			}
 			sp := i.stopPositions[m]
-			if sp != (stopPosition{}) {
+			if sp != (osmStopPosition{}) {
 				stopAreaStopPositions = append(stopAreaStopPositions, sp)
 			}
 		}
 
-		if stopAreaStation == (station{}) {
+		if stopAreaStation == (osmStation{}) {
 			continue
 		}
 
 		bahnStation := i.osmImporter.stationRepo.Get(uint(stopAreaStation.id))
 		bahnStation.Tracks = len(stopAreaStopPositions)
-    positions := make([][]string, 3)
+		positions := make([][]string, 3)
 		for _, sap := range stopAreaPlatforms {
-			bahnStation.Platforms = append(bahnStation.Platforms, stationRepo.Platform{
+			bahnStation.Platforms = append(bahnStation.Platforms, station.Platform{
 				Model:     gorm.Model{ID: uint(sap.id)},
 				Positions: sap.positions,
 			})
-      positions = append(positions, strings.Split(sap.positions, ";"))
+			positions = append(positions, strings.Split(sap.positions, ";"))
 		}
 		for _, sp := range stopAreaStopPositions {
-      neighbors, _ := lo.Find(positions, func(p []string) bool {
-          return lo.Contains(p, sp.position)
-      })
-			bahnStation.StopPosition = append(bahnStation.StopPosition, stationRepo.StopPosition{
-				Model:    gorm.Model{ID: uint(sp.id)},
-				Platform: sp.position,
-				Lat:      sp.lat,
-				Lng:      sp.lng,
-        Neighbors: strings.Join(neighbors, ";"),
+			neighbors, _ := lo.Find(positions, func(p []string) bool {
+				return lo.Contains(p, sp.position)
+			})
+			bahnStation.StopPosition = append(bahnStation.StopPosition, station.StopPosition{
+				Model:     gorm.Model{ID: uint(sp.id)},
+				Platform:  sp.position,
+				Lat:       sp.lat,
+				Lng:       sp.lng,
+				Neighbors: strings.Join(neighbors, ";"),
 			})
 		}
 

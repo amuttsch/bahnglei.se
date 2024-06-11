@@ -26,7 +26,7 @@ type Repo interface {
 	Count() int64
 }
 
-func New(db *gorm.DB, ctx context.Context) *countryRepo {
+func NewRepo(db *gorm.DB, ctx context.Context) *countryRepo {
 	db.AutoMigrate(&Country{})
 	db.Migrator().CreateIndex(&Country{}, "iso_code")
 

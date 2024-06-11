@@ -13,9 +13,9 @@ import (
 	"text/template"
 
 	"github.com/amuttsch/bahnglei.se/pkg/config"
-	"github.com/amuttsch/bahnglei.se/pkg/http"
-	"github.com/amuttsch/bahnglei.se/pkg/repo/country"
-	stationRepo "github.com/amuttsch/bahnglei.se/pkg/repo/station"
+	"github.com/amuttsch/bahnglei.se/pkg/country"
+	"github.com/amuttsch/bahnglei.se/pkg/index"
+	"github.com/amuttsch/bahnglei.se/pkg/station"
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -34,8 +34,8 @@ type Template struct {
 
 func newTemplate() *Template {
 	funcMap := template.FuncMap{
-		"sortStopPositions": func(slice []stationRepo.StopPosition) []stationRepo.StopPosition {
-			slices.SortFunc(slice, func(i stationRepo.StopPosition, j stationRepo.StopPosition) int {
+		"sortStopPositions": func(slice []station.StopPosition) []station.StopPosition {
+			slices.SortFunc(slice, func(i station.StopPosition, j station.StopPosition) int {
 				r := regexp.MustCompile("[^0-9]")
 				iPlatform, _ := strconv.Atoi(r.ReplaceAllString(i.Platform, ""))
 				jPlatform, _ := strconv.Atoi(r.ReplaceAllString(j.Platform, ""))
@@ -78,8 +78,8 @@ var serveCmd = &cobra.Command{
 		}
 
 		context := cmd.Context()
-		countryRepo := country.New(db, context)
-		stationRepo := stationRepo.New(db, context)
+		countryRepo := country.NewRepo(db, context)
+		stationRepo := station.NewRepo(db, context)
 
 		e := echo.New()
 		e.Renderer = newTemplate()
@@ -99,7 +99,8 @@ var serveCmd = &cobra.Command{
 			return false, nil
 		}))
 
-		http.Setup(e, conf, countryRepo, stationRepo)
+		index.Http(e, conf, countryRepo, stationRepo)
+		station.Http(e, conf, stationRepo)
 
 		go func() {
 			metrics := echo.New()                                // this Echo will run on separate port 8081

@@ -3,7 +3,7 @@ package station
 import (
 	"context"
 
-	"github.com/amuttsch/bahnglei.se/pkg/repo/country"
+	"github.com/amuttsch/bahnglei.se/pkg/country"
 	"gorm.io/gorm"
 )
 
@@ -50,7 +50,7 @@ type Repo interface {
 	Count() int64
 }
 
-func New(db *gorm.DB, ctx context.Context) *stationRepo {
+func NewRepo(db *gorm.DB, ctx context.Context) *stationRepo {
 	db.AutoMigrate(&Station{}, &Platform{}, &StopPosition{})
 
 	return &stationRepo{

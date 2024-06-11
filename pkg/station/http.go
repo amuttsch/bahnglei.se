@@ -1,4 +1,4 @@
-package http
+package station
 
 import (
 	"fmt"
@@ -7,8 +7,6 @@ import (
 	"strconv"
 
 	"github.com/amuttsch/bahnglei.se/pkg/config"
-	"github.com/amuttsch/bahnglei.se/pkg/repo/country"
-	stationRepo "github.com/amuttsch/bahnglei.se/pkg/repo/station"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 )
@@ -18,33 +16,16 @@ type controller struct {
 	config *config.Config
 }
 
-type IndexData struct {
-	StationListData
-	CountryCount int64
-	StationCount int64
-}
-
 type StationListData struct {
-	Stations []stationRepo.Station
+	Stations []Station
 }
 
 type StationData struct {
 	StationListData
-	Station *stationRepo.Station
+	Station *Station
 }
 
-func Setup(e *echo.Echo, config *config.Config, countryRepo country.Repo, stationRepo stationRepo.Repo) *controller {
-	e.GET("/", func(c echo.Context) error {
-		stationCount := stationRepo.Count()
-		countryCount := countryRepo.Count()
-
-		data := IndexData{
-			CountryCount: countryCount,
-			StationCount: stationCount,
-		}
-		return c.Render(200, "index.html", data)
-	})
-
+func Http(e *echo.Echo, config *config.Config, stationRepo Repo) *controller {
 	e.POST("/station", func(c echo.Context) error {
 		data := StationListData{
 			Stations: stationRepo.Search(c.FormValue("station")),

@@ -59,6 +59,6 @@
       }).addTo(map);
     {{ end }}
 
-  L.tileLayer('/tile/{z}/{x}/{y}.png').addTo(map);
+    L.tileLayer('/station/{{ .Station.ID }}/tile/{z}/{x}/{y}.png').addTo(map);
 </script>
 {{ end }}

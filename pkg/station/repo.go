@@ -2,6 +2,7 @@ package station
 
 import (
 	"context"
+	"errors"
 
 	"github.com/amuttsch/bahnglei.se/pkg/country"
 	"gorm.io/gorm"
@@ -40,7 +41,6 @@ type Station struct {
 	Tracks       int
 	Platforms    []Platform
 	StopPosition []StopPosition
-	OsmTile      []byte
 }
 
 type Repo interface {
@@ -66,7 +66,10 @@ func (r *stationRepo) Save(i *Station) error {
 
 func (r *stationRepo) Get(id uint) *Station {
 	var station Station
-	r.db.WithContext(r.ctx).Preload("Platforms").Preload("StopPosition").First(&station, id)
+	err := r.db.WithContext(r.ctx).Preload("Platforms").Preload("StopPosition").First(&station, id).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil
+	}
 	return &station
 }
 

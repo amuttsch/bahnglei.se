@@ -16,6 +16,7 @@ import (
 	"github.com/amuttsch/bahnglei.se/pkg/country"
 	"github.com/amuttsch/bahnglei.se/pkg/index"
 	"github.com/amuttsch/bahnglei.se/pkg/station"
+	"github.com/amuttsch/bahnglei.se/pkg/tile"
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -80,6 +81,7 @@ var serveCmd = &cobra.Command{
 		context := cmd.Context()
 		countryRepo := country.NewRepo(db, context)
 		stationRepo := station.NewRepo(db, context)
+		tileRepo := tile.NewRepo(db, context)
 
 		e := echo.New()
 		e.Renderer = newTemplate()
@@ -100,7 +102,7 @@ var serveCmd = &cobra.Command{
 		}))
 
 		index.Http(e, conf, countryRepo, stationRepo)
-		station.Http(e, conf, stationRepo)
+		station.Http(e, conf, stationRepo, tileRepo)
 
 		go func() {
 			metrics := echo.New()                                // this Echo will run on separate port 8081

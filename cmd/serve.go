@@ -87,6 +87,7 @@ var serveCmd = &cobra.Command{
 		countryRepo := country.NewRepo(db, context)
 		stationRepo := station.NewRepo(db, context)
 		tileRepo := tile.NewRepo(db, context)
+		tileService := tile.NewTileService(tileRepo, conf.ThunderforestConfig.ApiKey)
 
 		e := echo.New()
 		e.Renderer = newTemplate()
@@ -107,7 +108,7 @@ var serveCmd = &cobra.Command{
 		e.GET("/assets/*", echo.WrapHandler(http.StripPrefix("/assets", hashfs.FileServer(AssetFS))))
 
 		index.Http(e, conf, countryRepo, stationRepo)
-		station.Http(e, conf, stationRepo, tileRepo)
+		station.Http(e, conf, stationRepo, tileService)
 
 		go func() {
 			metrics := echo.New()                                // this Echo will run on separate port 8081

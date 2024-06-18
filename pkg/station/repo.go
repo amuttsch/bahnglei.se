@@ -15,8 +15,8 @@ type stationRepo struct {
 
 type Platform struct {
 	gorm.Model
-	StationID uint
 	Positions string
+	StationID uint
 }
 
 type StopPosition struct {

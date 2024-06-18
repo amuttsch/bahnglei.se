@@ -9,6 +9,7 @@ require (
 )
 
 require (
+	github.com/benbjohnson/hashfs v0.2.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/datadog/czlib v0.0.0-20160811164712-4bc9a24e37f2 // indirect

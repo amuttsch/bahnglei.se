@@ -2,10 +2,9 @@ package cmd
 
 import (
 	"crypto/subtle"
-	"embed"
 	"errors"
 	"io"
-	goHttp "net/http"
+	"net/http"
 	"os"
 	"regexp"
 	"strconv"
@@ -17,6 +16,7 @@ import (
 	"github.com/amuttsch/bahnglei.se/pkg/index"
 	"github.com/amuttsch/bahnglei.se/pkg/station"
 	"github.com/amuttsch/bahnglei.se/pkg/tile"
+	"github.com/benbjohnson/hashfs"
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -27,7 +27,7 @@ import (
 	"gorm.io/gorm"
 )
 
-var AssetFS embed.FS
+var AssetFS *hashfs.FS
 
 type Template struct {
 	tmpl *template.Template
@@ -49,6 +49,11 @@ func newTemplate() *Template {
 		},
 		"replaceSpace": func(s string) string {
 			return strings.ReplaceAll(s, " ", "-")
+		},
+		"asset": func(name string) string {
+			log.Info(AssetFS.HashName(name))
+
+			return "/assets/" + AssetFS.HashName(name)
 		},
 	}
 	return &Template{
@@ -86,11 +91,9 @@ var serveCmd = &cobra.Command{
 		e := echo.New()
 		e.Renderer = newTemplate()
 		e.Use(middleware.Logger())
-		e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
-			HTML5:      true,
-			Filesystem: goHttp.FS(AssetFS),
-		}))
 		e.Use(echoprometheus.NewMiddleware("bahngleise"))
+		e.Use(middleware.Gzip())
+		e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(20)))
 
 		e.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
 			// Be careful to use constant time comparison to prevent timing attacks
@@ -101,13 +104,15 @@ var serveCmd = &cobra.Command{
 			return false, nil
 		}))
 
+		e.GET("/assets/*", echo.WrapHandler(http.StripPrefix("/assets", hashfs.FileServer(AssetFS))))
+
 		index.Http(e, conf, countryRepo, stationRepo)
 		station.Http(e, conf, stationRepo, tileRepo)
 
 		go func() {
 			metrics := echo.New()                                // this Echo will run on separate port 8081
 			metrics.GET("/metrics", echoprometheus.NewHandler()) // adds route to serve gathered metrics
-			if err := metrics.Start(":9091"); err != nil && !errors.Is(err, goHttp.ErrServerClosed) {
+			if err := metrics.Start(":9091"); err != nil && !errors.Is(err, http.ErrServerClosed) {
 				log.Fatal(err)
 			}
 		}()

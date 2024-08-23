@@ -1,11 +1,9 @@
 FROM node:latest as tailwind
 
 WORKDIR /app
-COPY ./css ./css
 
+COPY . /app
 RUN npx --yes tailwindcss -i ./css/input.css -o ./css/style.css
-
-
 
 FROM ghcr.io/a-h/templ:latest as templ
 

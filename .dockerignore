@@ -28,3 +28,4 @@
 
 **/tmp
 fly.toml
+*_templ.go

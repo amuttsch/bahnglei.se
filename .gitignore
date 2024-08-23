@@ -27,3 +27,5 @@ go.work.sum
 
 tmp/
 css/style.css
+*_templ.go
+

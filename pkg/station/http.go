@@ -6,7 +6,10 @@ import (
 
 	"github.com/amuttsch/bahnglei.se/pkg/config"
 	"github.com/amuttsch/bahnglei.se/pkg/tile"
+	"github.com/amuttsch/bahnglei.se/templates/components"
+	"github.com/amuttsch/bahnglei.se/templates/pages"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/sirupsen/logrus"
 )
 
@@ -15,31 +18,72 @@ type controller struct {
 	config *config.Config
 }
 
-type StationListData struct {
-	Stations []Station
-}
-
 type StationData struct {
 	Station *Station
-	StationListData
+	components.StationSearchProps
 }
 
 func Http(e *echo.Echo, config *config.Config, stationRepo Repo, tileService tile.TileService) *controller {
 	e.POST("/station", func(c echo.Context) error {
-		data := StationListData{
-			Stations: stationRepo.Search(c.FormValue("station")),
+		stations := stationRepo.Search(c.FormValue("station"))
+		stationData := make([]components.StationSearchElement, len(stations))
+
+		for i, station := range stations {
+			stationData[i] = components.StationSearchElement{
+				ID:   strconv.Itoa(int(station.ID)),
+				Name: station.Name,
+			}
 		}
-		return c.Render(200, "stationlist", data)
+		data := components.StationSearchProps{
+			Stations: stationData,
+		}
+		stationComponent := components.StationSearchResultList(data)
+		return stationComponent.Render(c.Request().Context(), c.Response().Writer)
 	})
 
 	e.GET("/station/:id", func(c echo.Context) error {
 		id, _ := strconv.Atoi(c.Param("id"))
 		station := stationRepo.Get(uint(id))
-		data := StationData{
-			StationListData: StationListData{},
-			Station:         station,
+
+		stopPositions := make([]pages.StopPositionProps, len(station.StopPosition))
+		for i, stopPosition := range station.StopPosition {
+			stopPositions[i] = pages.StopPositionProps{
+				Platform:  stopPosition.Platform,
+				Lat:       strconv.FormatFloat(stopPosition.Lat, 'f', -1, 64),
+				Lng:       strconv.FormatFloat(stopPosition.Lng, 'f', -1, 64),
+				Neighbors: stopPosition.Neighbors,
+			}
 		}
-		return c.Render(200, "station.html", data)
+
+		platforms := make([]pages.PlatformProps, len(station.Platforms))
+		for i, platform := range station.Platforms {
+			platforms[i] = pages.PlatformProps{
+				Positions: platform.Positions,
+			}
+		}
+
+		data := pages.StationPageProps{
+			StationSearchProps: components.StationSearchProps{},
+			ID:                 strconv.Itoa(int(station.ID)),
+			Name:               station.Name,
+			Lat:                strconv.FormatFloat(station.Lat, 'f', -1, 64),
+			Lng:                strconv.FormatFloat(station.Lng, 'f', -1, 64),
+			Tracks:             strconv.Itoa(station.Tracks),
+			StopPosition:       stopPositions,
+			Platforms:          platforms,
+			CSRFToken:          c.Get(middleware.DefaultCSRFConfig.ContextKey).(string),
+		}
+
+		stationPage := pages.StationPage(data)
+		return stationPage.Render(c.Request().Context(), c.Response().Writer)
+	})
+
+	e.POST("/station/:id/report", func(c echo.Context) error {
+		id, _ := strconv.Atoi(c.Param("id"))
+		report := c.FormValue("report")
+		station := stationRepo.Get(uint(id))
+		logrus.Warnf("Reported station %s (%d): %s", station.Name, station.ID, report)
+		return c.String(200, "Reported station")
 	})
 
 	e.GET("/station/:id/tile/:z/:x/:y", func(c echo.Context) error {

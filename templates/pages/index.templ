@@ -1,0 +1,24 @@
+package pages
+
+import (
+	"github.com/amuttsch/bahnglei.se/templates/components"
+	"github.com/amuttsch/bahnglei.se/templates/layout"
+)
+
+type IndexProps struct {
+	components.StationSearchProps
+	CountryCount string
+	StationCount string
+}
+
+templ IndexPage(data IndexProps) {
+	@layout.Layout() {
+		@components.StationSearch(data.StationSearchProps)
+		<div>
+			<ul>
+				<li>{ data.CountryCount } countries</li>
+				<li>{ data.StationCount } stations</li>
+			</ul>
+		</div>
+	}
+}

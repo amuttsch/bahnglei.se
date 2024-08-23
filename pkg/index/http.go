@@ -1,21 +1,20 @@
 package index
 
 import (
+	"strconv"
+
 	"github.com/amuttsch/bahnglei.se/pkg/config"
 	"github.com/amuttsch/bahnglei.se/pkg/country"
 	"github.com/amuttsch/bahnglei.se/pkg/station"
+	"github.com/amuttsch/bahnglei.se/templates/components"
+	"github.com/amuttsch/bahnglei.se/templates/pages"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 type controller struct {
 	e      *echo.Echo
 	config *config.Config
-}
-
-type IndexData struct {
-	station.StationListData
-	CountryCount int64
-	StationCount int64
 }
 
 func Http(e *echo.Echo, config *config.Config, countryRepo country.Repo, stationRepo station.Repo) *controller {
@@ -27,11 +26,15 @@ func Http(e *echo.Echo, config *config.Config, countryRepo country.Repo, station
 		stationCount := stationRepo.Count()
 		countryCount := countryRepo.Count()
 
-		data := IndexData{
-			CountryCount: countryCount,
-			StationCount: stationCount,
+		data := pages.IndexProps{
+			CountryCount: strconv.Itoa(int(countryCount)),
+			StationCount: strconv.Itoa(int(stationCount)),
+			StationSearchProps: components.StationSearchProps{
+				CSRFToken: c.Get(middleware.DefaultCSRFConfig.ContextKey).(string),
+			},
 		}
-		return c.Render(200, "index.html", data)
+		index := pages.IndexPage(data)
+		return index.Render(c.Request().Context(), c.Response().Writer)
 	})
 
 	return &controller{

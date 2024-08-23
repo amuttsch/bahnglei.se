@@ -4,11 +4,17 @@
 .build-application:
 	go build
 
-build: .build-tailwind .build-application
+.build-templ:
+	templ generate
 
-deploy: build
+build: .build-tailwind .build-templ .build-application
+
+deploy: 
 	fly deploy
 
+build-dev: .build-tailwind .build-templ
+	go build -o ./tmp/main .
+
 dev:
-	air
+	air serve
 

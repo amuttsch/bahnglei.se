@@ -3,6 +3,5 @@
 @tailwind utilities;
 
 .z-force {
-    z-Index: 50 !important;
+  z-index: 50 !important;
 }
-

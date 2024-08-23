@@ -3,13 +3,8 @@ package cmd
 import (
 	"crypto/subtle"
 	"errors"
-	"io"
 	"net/http"
 	"os"
-	"regexp"
-	"strconv"
-	"strings"
-	"text/template"
 
 	"github.com/amuttsch/bahnglei.se/pkg/config"
 	"github.com/amuttsch/bahnglei.se/pkg/country"
@@ -22,53 +17,11 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/slices"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 var AssetFS *hashfs.FS
-
-type Template struct {
-	tmpl *template.Template
-}
-
-func newTemplate() *Template {
-	funcMap := template.FuncMap{
-		"sortStopPositions": func(slice []station.StopPosition) []station.StopPosition {
-			slices.SortFunc(slice, func(i station.StopPosition, j station.StopPosition) int {
-				r := regexp.MustCompile("[^0-9]")
-				iPlatform, _ := strconv.Atoi(r.ReplaceAllString(i.Platform, ""))
-				jPlatform, _ := strconv.Atoi(r.ReplaceAllString(j.Platform, ""))
-				return iPlatform - jPlatform
-			})
-			return slice
-		},
-		"splitString": func(s string, sep string) []string {
-			return strings.Split(s, sep)
-		},
-		"replaceSpace": func(s string) string {
-			return strings.ReplaceAll(s, " ", "-")
-		},
-		"asset": func(name string) string {
-			log.Info(AssetFS.HashName(name))
-
-			return "/assets/" + AssetFS.HashName(name)
-		},
-	}
-	return &Template{
-		tmpl: template.Must(template.New("").Funcs(funcMap).ParseFS(AssetFS, "views/*.html")).Funcs(funcMap),
-	}
-}
-
-func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
-	if strings.HasSuffix(name, ".html") {
-		tmpl := template.Must(t.tmpl.Clone())
-		tmpl = template.Must(tmpl.ParseFS(AssetFS, "views/"+name))
-		return tmpl.ExecuteTemplate(w, name, data)
-	}
-	return t.tmpl.ExecuteTemplate(w, name, data)
-}
 
 var serveCmd = &cobra.Command{
 	Use:   "serve",
@@ -90,11 +43,13 @@ var serveCmd = &cobra.Command{
 		tileService := tile.NewTileService(tileRepo, conf.ThunderforestConfig.ApiKey)
 
 		e := echo.New()
-		e.Renderer = newTemplate()
 		e.Use(middleware.Logger())
 		e.Use(echoprometheus.NewMiddleware("bahngleise"))
 		e.Use(middleware.Gzip())
 		e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(20)))
+		e.Use(middleware.CSRFWithConfig(middleware.CSRFConfig{
+			TokenLookup: "form:_csrf",
+		}))
 
 		e.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
 			// Be careful to use constant time comparison to prevent timing attacks

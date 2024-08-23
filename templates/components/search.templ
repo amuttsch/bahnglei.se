@@ -1,0 +1,46 @@
+package components
+
+type StationSearchElement struct {
+	ID   string
+	Name string
+}
+
+type StationSearchProps struct {
+	CSRFToken string
+	Stations  []StationSearchElement
+}
+
+templ StationSearch(stationList StationSearchProps) {
+	<form
+		onkeydown="return event.key != 'Enter';"
+		hx-post="/station"
+		hx-trigger="keyup[target.value.length > 3] changed from:input delay:500ms"
+		hx-swap="innerHTML"
+		hx-target="#stationlist"
+		autocomplete="off"
+	>
+		<input type="hidden" name="_csrf" value={ stationList.CSRFToken }/>
+		<input class="border border-black" type="text" name="station" placeholder="Enter station"/>
+	</form>
+	@StationSearchResultList(stationList)
+}
+
+func getStationUrl(id string) string {
+	return "/station/" + id
+}
+
+templ StationSearchResultList(stationList StationSearchProps) {
+	<div id="stationlist">
+		<ul>
+			for _, item := range stationList.Stations {
+				@StationSearchResultListItem(item)
+			}
+		</ul>
+	</div>
+}
+
+templ StationSearchResultListItem(item StationSearchElement) {
+	<li>
+		<a href={ templ.SafeURL(getStationUrl(item.ID)) }>{ item.Name }</a>
+	</li>
+}

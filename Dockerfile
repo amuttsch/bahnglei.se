@@ -1,3 +1,18 @@
+FROM node:latest as tailwind
+
+WORKDIR /app
+COPY ./css ./css
+
+RUN npx --yes tailwindcss -i ./css/input.css -o ./css/style.css
+
+
+
+FROM ghcr.io/a-h/templ:latest as templ
+
+WORKDIR /app
+COPY --chown=65532:65532 . /app
+RUN ["templ", "generate"]
+
 FROM golang:1.22 as build
 
 WORKDIR /app
@@ -9,10 +24,11 @@ RUN update-ca-certificates
 COPY go.mod go.sum ./
 RUN go mod download
 
-COPY . .
+COPY --from=templ /app /app
+COPY --from=tailwind /app/css /app/css
 
 # Build
-RUN CGO_ENABLED=0 GOOS=linux go build -o bahngleise
+RUN CGO_ENABLED=0 GOOS=linux go build -buildvcs=false -o bahngleise
 
 FROM scratch
 

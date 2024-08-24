@@ -10,32 +10,30 @@ templ Layout() {
 		<head>
 			<title>Bahnglei.se</title>
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
-			<script src="https://unpkg.com/htmx.org/dist/htmx.js"></script>
-			<script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
+			<script src={ templates.Asset(`js/htmx.min.js`) }></script>
+			<script src={ templates.Asset(`js/hyperscript.js`) }></script>
 			<link
 				rel="stylesheet"
-				href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-				integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-				crossorigin=""
+				href={ templates.Asset(`css/leaflet.css`) }
 			/>
-			<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+			<script src={ templates.Asset(`js/leaflet.js`) }></script>
 			<link rel="stylesheet" href={ templates.Asset(`css/style.css`) }/>
 			<link
 				rel="apple-touch-icon"
 				sizes="180x180"
-				href="/images/apple-touch-icon.png"
+				href="/img/apple-touch-icon.png"
 			/>
 			<link
 				rel="icon"
 				type="image/png"
 				sizes="32x32"
-				href="/images/favicon-32x32.png"
+				href="/img/favicon-32x32.png"
 			/>
 			<link
 				rel="icon"
 				type="image/png"
 				sizes="16x16"
-				href="/images/favicon-16x16.png"
+				href="/img/favicon-16x16.png"
 			/>
 		</head>
 		<body class="h-full">

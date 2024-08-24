@@ -60,7 +60,7 @@ var serveCmd = &cobra.Command{
 			return false, nil
 		}))
 
-		e.GET("/assets/*", echo.WrapHandler(http.StripPrefix("/assets", hashfs.FileServer(AssetFS))))
+		e.GET("/assets/*", echo.WrapHandler(hashfs.FileServer(AssetFS)))
 
 		index.Http(e, conf, countryRepo, stationRepo)
 		station.Http(e, conf, stationRepo, tileService)

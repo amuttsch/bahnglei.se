@@ -5,3 +5,21 @@
 .z-force {
   z-index: 50 !important;
 }
+
+#index-bg {
+  background-image: linear-gradient(
+      to bottom,
+      rgba(235, 237, 245, 0),
+      rgba(235, 237, 245, 1)
+    ),
+    url("/assets/img/index-background.jpg");
+  position: absolute;
+  transform: scale(1.1);
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 25vh;
+  background-repeat: no-repeat;
+  z-index: -1;
+  background-size: cover;
+}

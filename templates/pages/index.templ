@@ -13,6 +13,7 @@ type IndexProps struct {
 
 templ IndexPage(data IndexProps) {
 	@layout.Layout() {
+		<div id="index-bg"></div>
 		@components.StationSearch(data.StationSearchProps)
 		<div>
 			<ul>

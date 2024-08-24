@@ -3,7 +3,7 @@ FROM node:latest as tailwind
 WORKDIR /app
 
 COPY . /app
-RUN npx --yes tailwindcss -i ./css/input.css -o ./css/style.css
+RUN npx --yes tailwindcss -i ./input.css -o ./assets/css/style.css
 
 FROM ghcr.io/a-h/templ:latest as templ
 
@@ -23,7 +23,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY --from=templ /app /app
-COPY --from=tailwind /app/css /app/css
+COPY --from=tailwind /app/assets /app/assets
 
 # Build
 RUN CGO_ENABLED=0 GOOS=linux go build -buildvcs=false -o bahngleise

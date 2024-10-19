@@ -3,15 +3,16 @@ package cmd
 import (
 	"os"
 
+	migrate "github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/cobra"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 
 	"github.com/amuttsch/bahnglei.se/pkg/config"
-	"github.com/amuttsch/bahnglei.se/pkg/country"
 	"github.com/amuttsch/bahnglei.se/pkg/osmimporter"
-	"github.com/amuttsch/bahnglei.se/pkg/station"
+	"github.com/amuttsch/bahnglei.se/pkg/repository"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -22,21 +23,29 @@ var importCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Infoln("Starting OSM importer")
 		conf := config.Read()
+		context := cmd.Context()
 
 		// Do Stuff Here
-		db, err := gorm.Open(postgres.Open(conf.DatabaseUrl))
+		dbPool, err := pgxpool.New(context, conf.DatabaseUrl)
 		if err != nil {
 			log.Errorf("Unable to connect to database: %v\n", err)
 			os.Exit(1)
 		}
+		defer dbPool.Close()
 
-		context := cmd.Context()
-		countryRepo := country.NewRepo(db, context)
-		importRepo := osmimporter.NewRepo(db, context)
-		stationRepo := station.NewRepo(db, context)
+		m, err := migrate.New(
+			"file://db/migrations",
+			conf.DatabaseUrl)
+		if err != nil {
+			log.Errorf("Unable to run migrations: %v\n", err)
+			os.Exit(1)
+		}
+		m.Up()
 
-		osmImporter := osmimporter.New(conf, countryRepo, importRepo, stationRepo)
-		osmImporter.Import()
+		repo := repository.New(dbPool)
+
+		osmImporter := osmimporter.New(conf, repo)
+		osmImporter.Import(context)
 
 		log.Infoln("Finished importing OSM data")
 	},

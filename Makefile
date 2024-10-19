@@ -7,12 +7,15 @@
 .build-templ:
 	templ generate
 
-build: .build-tailwind .build-templ .build-application
+.build-sqlc:
+	sqlc generate
+
+build: .build-tailwind .build-templ .build-sqlc .build-application
 
 deploy: 
 	fly deploy
 
-build-dev: .build-tailwind .build-templ
+build-dev: .build-tailwind .build-templ .build-sqlc
 	go build -o ./tmp/main .
 
 dev:

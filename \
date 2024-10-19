@@ -1,0 +1,72 @@
+CREATE TABLE IF NOT EXISTS public.countries
+(
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    iso_code text COLLATE pg_catalog."default" NOT NULL,
+    name text COLLATE pg_catalog."default",
+    osm_url text COLLATE pg_catalog."default",
+    CONSTRAINT countries_pkey PRIMARY KEY (iso_code)
+);
+
+CREATE TABLE IF NOT EXISTS public.stations
+(
+    id bigint NOT NULL DEFAULT nextval('stations_id_seq'::regclass),
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    country_id text COLLATE pg_catalog."default",
+    name text COLLATE pg_catalog."default",
+    lat numeric,
+    lng numeric,
+    operator text COLLATE pg_catalog."default",
+    wikidata text COLLATE pg_catalog."default",
+    wikipedia text COLLATE pg_catalog."default",
+    tracks bigint,
+    CONSTRAINT stations_pkey PRIMARY KEY (id),
+    CONSTRAINT fk_stations_country FOREIGN KEY (country_id)
+        REFERENCES public.countries (iso_code) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+);
+
+CREATE TABLE IF NOT EXISTS public.platforms
+(
+    id bigint NOT NULL DEFAULT nextval('platforms_id_seq'::regclass),
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    positions text COLLATE pg_catalog."default",
+    station_id bigint,
+    CONSTRAINT platforms_pkey PRIMARY KEY (id),
+    CONSTRAINT fk_stations_platforms FOREIGN KEY (station_id)
+        REFERENCES public.stations (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+);
+
+CREATE TABLE IF NOT EXISTS public.stop_positions
+(
+    id bigint NOT NULL DEFAULT nextval('stop_positions_id_seq'::regclass),
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    station_id bigint,
+    platform text COLLATE pg_catalog."default",
+    lat numeric,
+    lng numeric,
+    neighbors text COLLATE pg_catalog."default",
+    CONSTRAINT stop_positions_pkey PRIMARY KEY (id),
+    CONSTRAINT fk_stations_stop_position FOREIGN KEY (station_id)
+        REFERENCES public.stations (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+);
+
+CREATE TABLE IF NOT EXISTS public.osm_tiles
+(
+    id bigint NOT NULL DEFAULT nextval('osm_tiles_id_seq'::regclass),
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    x bigint,
+    y bigint,
+    z bigint,
+    data bytea,
+    CONSTRAINT osm_tiles_pkey PRIMARY KEY (id)
+);

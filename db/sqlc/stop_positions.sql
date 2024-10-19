@@ -1,0 +1,11 @@
+-- name: CreateStopPosition :one
+insert into stop_positions (station_id, platform, lat, lng, neighbors) 
+  values ($1, $2, $3, $4, $5) 
+  returning *;
+
+-- name: DeleteStopPositionsForStation :exec
+delete from stop_positions where station_id = $1;
+
+-- name: GetStopPositionsForStation :many
+select * from stop_positions where station_id = $1;
+

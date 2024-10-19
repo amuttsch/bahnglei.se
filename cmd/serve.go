@@ -7,18 +7,20 @@ import (
 	"os"
 
 	"github.com/amuttsch/bahnglei.se/pkg/config"
-	"github.com/amuttsch/bahnglei.se/pkg/country"
 	"github.com/amuttsch/bahnglei.se/pkg/index"
+	"github.com/amuttsch/bahnglei.se/pkg/repository"
 	"github.com/amuttsch/bahnglei.se/pkg/station"
 	"github.com/amuttsch/bahnglei.se/pkg/tile"
 	"github.com/benbjohnson/hashfs"
+	migrate "github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 var AssetFS *hashfs.FS
@@ -28,19 +30,27 @@ var serveCmd = &cobra.Command{
 	Short: "Run the server",
 	Run: func(cmd *cobra.Command, args []string) {
 		conf := config.Read()
+		context := cmd.Context()
 
 		// Do Stuff Here
-		db, err := gorm.Open(postgres.Open(conf.DatabaseUrl))
+		dbPool, err := pgxpool.New(context, conf.DatabaseUrl)
 		if err != nil {
 			log.Errorf("Unable to connect to database: %v\n", err)
 			os.Exit(1)
 		}
+		defer dbPool.Close()
 
-		context := cmd.Context()
-		countryRepo := country.NewRepo(db, context)
-		stationRepo := station.NewRepo(db, context)
-		tileRepo := tile.NewRepo(db, context)
-		tileService := tile.NewTileService(tileRepo, conf.ThunderforestConfig.ApiKey)
+		m, err := migrate.New(
+			"file://db/migrations",
+			conf.DatabaseUrl)
+		if err != nil {
+			log.Errorf("Unable to run migrations: %v\n", err)
+			os.Exit(1)
+		}
+		m.Up()
+
+		repo := repository.New(dbPool)
+		tileService := tile.NewTileService(repo, conf.ThunderforestConfig.ApiKey)
 
 		e := echo.New()
 		e.Use(middleware.Logger())
@@ -62,8 +72,8 @@ var serveCmd = &cobra.Command{
 
 		e.GET("/assets/*", echo.WrapHandler(hashfs.FileServer(AssetFS)))
 
-		index.Http(e, conf, countryRepo, stationRepo)
-		station.Http(e, conf, stationRepo, tileService)
+		index.Http(e, conf, repo)
+		station.Http(e, conf, repo, tileService)
 
 		go func() {
 			metrics := echo.New()                                // this Echo will run on separate port 8081

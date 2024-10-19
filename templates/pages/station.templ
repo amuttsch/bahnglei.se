@@ -2,36 +2,20 @@ package pages
 
 import (
 	"strings"
+	"strconv"
 	"github.com/amuttsch/bahnglei.se/templates/components"
 	"github.com/amuttsch/bahnglei.se/templates/layout"
+	"github.com/amuttsch/bahnglei.se/pkg/repository"
 )
-
-type PlatformProps struct {
-	Positions string
-	StationID string
-}
-
-type StopPositionProps struct {
-	StationID string
-	Platform  string
-	Lat       string
-	Lng       string
-	Neighbors string
-}
 
 type StationPageProps struct {
 	components.StationSearchProps
-	ID           string
-	Name         string
-	Lat          string
-	Lng          string
-	Tracks       string
-	Platforms    []PlatformProps
-	StopPosition []StopPositionProps
-	CSRFToken    string
+	repository.Station
+	Platforms    []repository.Platform
+	StopPosition []repository.StopPosition
 }
 
-func platformButtonHyperscript(stopPosition StopPositionProps) string {
+func platformButtonHyperscript(stopPosition repository.StopPosition) string {
 	var sb strings.Builder
 	sb.WriteString(" on track[platform=='" + stopPosition.Platform + "']")
 	sb.WriteString("  transition opacity to 1")
@@ -49,13 +33,13 @@ func platformButtonHyperscript(stopPosition StopPositionProps) string {
 	return sb.String()
 }
 
-templ StationPage(station StationPageProps) {
+templ StationPage(props StationPageProps) {
 	@layout.Layout() {
-		@components.StationSearch(station.StationSearchProps)
+		@components.StationSearch(props.StationSearchProps)
 		<div>
-			<span class="font-bold">{ station.Name }</span>
+			<span class="font-bold">{ props.Station.Name }</span>
 			<div class="flex flex-row flex-wrap">
-				for _, stopPosition := range station.StopPosition {
+				for _, stopPosition := range props.StopPosition {
 					<button
 						class="track-marker border border-white w-8 h-8 font-bold bg-[#1455C0] text-white text-lg text-center"
 						_={ platformButtonHyperscript(stopPosition) }
@@ -66,9 +50,9 @@ templ StationPage(station StationPageProps) {
 			</div>
 			<div id="map" class="z-10 h-64"></div>
 			<ul>
-				<span>Number of tracks: { station.Tracks }</span>
+				<span>Number of tracks: { strconv.FormatInt(props.Station.Tracks, 10) }</span>
 				<h2 class="font-bold">Tracks that are on the same platform</h2>
-				for _, platform := range station.Platforms {
+				for _, platform := range props.Platforms {
 					<li>{ platform.Positions }</li>
 				}
 			</ul>
@@ -120,11 +104,11 @@ templ StationPage(station StationPageProps) {
 					<form
 						method="POST"
 						enctype="multipart/form-data"
-						hx-post={ "/station/" + station.ID + "/report" }
+						hx-post={ "/station/" + strconv.FormatInt(props.Station.ID, 10) + "/report" }
 						hx-swap="innerHTML"
 						hx-target="#reportResult"
 					>
-						<input type="hidden" name="_csrf" value={ station.CSRFToken }/>
+						<input type="hidden" name="_csrf" value={ props.CSRFToken }/>
 						<div class="p-4 md:p-5 space-y-4">
 							<p
 								class="text-base leading-relaxed text-gray-500 dark:text-gray-400"
@@ -155,12 +139,14 @@ templ StationPage(station StationPageProps) {
 				</div>
 			</div>
 		</div>
-		@templ.JSONScript("stationData", station)
+		@templ.JSONScript("station", props.Station)
+		@templ.JSONScript("stopPosition", props.StopPosition)
 		<script>
-      const data = JSON.parse(document.getElementById('stationData').textContent);
-      var map = L.map('map').setView([data.Lat, data.Lng], 16);
+      const station = JSON.parse(document.getElementById('station').textContent);
+      const stopPosition = JSON.parse(document.getElementById('stopPosition').textContent);
+      var map = L.map('map').setView([station.Lat, station.Lng], 16);
 
-      data.StopPosition?.forEach(stopPosition => {
+      stopPosition?.forEach(stopPosition => {
         const platform = stopPosition.Platform.replace(' ', '-');
         L.marker([stopPosition.Lat, stopPosition.Lng], {
             riseOnHover: true,
@@ -182,7 +168,7 @@ templ StationPage(station StationPageProps) {
         }).addTo(map);
       });
 
-      L.tileLayer(`/station/${data.ID}/tile/{z}/{x}/{y}.png`).addTo(map);
+      L.tileLayer(`/station/${station.ID}/tile/{z}/{x}/{y}.png`).addTo(map);
   </script>
 	}
 }

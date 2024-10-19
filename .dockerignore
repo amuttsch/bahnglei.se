@@ -26,6 +26,8 @@
 # env file
 **/.env
 
+pkg/repository
+
 **/tmp
 fly.toml
 *_templ.go

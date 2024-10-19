@@ -2,7 +2,11 @@
 module.exports = {
   content: ["./templates/**/*.templ"],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        sans: "Poppins",
+      },
+    },
   },
   plugins: [],
 };

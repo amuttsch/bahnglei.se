@@ -11,6 +11,12 @@ WORKDIR /app
 COPY --chown=65532:65532 . /app
 RUN ["templ", "generate"]
 
+FROM sqlc/sqlc as sqlc
+
+WORKDIR /app
+COPY --chown=65532:65532 . /app
+RUN ["/workspace/sqlc", "generate"]
+
 FROM golang:1.22 as build
 
 WORKDIR /app
@@ -23,6 +29,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY --from=templ /app /app
+COPY --from=sqlc /app/pkg/repository /app/pkg/repository
 COPY --from=tailwind /app/assets /app/assets
 
 # Build

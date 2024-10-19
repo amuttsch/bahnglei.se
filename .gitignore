@@ -30,4 +30,5 @@ css/style.css
 *_templ.go
 
 .DS_Store
+pkg/repository
 

@@ -8,21 +8,17 @@ import (
 	"strings"
 
 	"github.com/amuttsch/bahnglei.se/pkg/config"
-	"github.com/amuttsch/bahnglei.se/pkg/country"
-	"github.com/amuttsch/bahnglei.se/pkg/station"
+	"github.com/amuttsch/bahnglei.se/pkg/repository"
 	"github.com/paulmach/osm"
 	"github.com/paulmach/osm/osmpbf"
 	"github.com/samber/lo"
-	"gorm.io/gorm"
 
 	log "github.com/sirupsen/logrus"
 )
 
 type osmImporter struct {
-	config       *config.Config
-	countryRepo  country.Repo
-	importerRepo Repo
-	stationRepo  station.Repo
+	config *config.Config
+	repo   *repository.Queries
 }
 
 type osmStation struct {
@@ -52,23 +48,24 @@ type osmStopArea struct {
 	members []int64
 }
 
-func New(config *config.Config, countryRepo country.Repo, importerRepo Repo, ststationRepo station.Repo) *osmImporter {
+func New(config *config.Config, repo *repository.Queries) *osmImporter {
 	return &osmImporter{
-		countryRepo:  countryRepo,
-		importerRepo: importerRepo,
-		stationRepo:  ststationRepo,
-		config:       config,
+		repo:   repo,
+		config: config,
 	}
 }
 
-func (i *osmImporter) Import() {
+func (i *osmImporter) Import(ctx context.Context) {
 	for _, c := range i.config.Countries {
-		country := country.Country{
+		country, err := i.repo.SaveCountry(ctx, repository.SaveCountryParams{
 			IsoCode: c.Iso,
 			OsmUrl:  c.Url,
 			Name:    c.Name,
+		})
+		if err != nil {
+			log.Errorf("Failed to create country %s: %+v", c.Name, err)
+			return
 		}
-		i.countryRepo.Save(country)
 
 		ci := countryImporter{
 			country:       country,
@@ -78,12 +75,12 @@ func (i *osmImporter) Import() {
 			stopPositions: make(map[int64]osmStopPosition),
 			stopAreas:     []osmStopArea{},
 		}
-		ci.importCountry()
+		ci.importCountry(ctx)
 	}
 }
 
 type countryImporter struct {
-	country       country.Country
+	country       repository.Country
 	osmImporter   *osmImporter
 	stations      map[int64]osmStation
 	platforms     map[int64]osmPlatform
@@ -91,26 +88,30 @@ type countryImporter struct {
 	stopAreas     []osmStopArea
 }
 
-func (i *countryImporter) importCountry() {
-	importerState := ImportState{
-		Country:         i.country,
-		State:           "started",
-		NumberStations:  0,
-		NumberPlatforms: 0,
+func (i *countryImporter) importCountry(ctx context.Context) {
+	state, err := i.osmImporter.repo.CreateImportState(ctx, i.country.IsoCode)
+	if err != nil {
+		fmt.Println(err)
 	}
-	i.osmImporter.importerRepo.Save(&importerState)
 
 	log.Infof("Importing country %s from %s", i.country.IsoCode, i.country.OsmUrl)
 
 	response, err := http.Get(i.country.OsmUrl)
 	if err != nil {
 		fmt.Println(err)
+		i.osmImporter.repo.UpdateImportState(ctx, repository.UpdateImportStateParams{
+			ID:              state.ID,
+			NumberStations:  0,
+			NumberPlatforms: 0,
+			State:           "failed: Get OSM data",
+		})
+
 		return
 	}
 
 	defer response.Body.Close()
 
-	scanner := osmpbf.New(context.Background(), response.Body, runtime.GOMAXPROCS(-1))
+	scanner := osmpbf.New(ctx, response.Body, runtime.GOMAXPROCS(-1))
 	defer scanner.Close()
 
 	for scanner.Scan() {
@@ -120,17 +121,26 @@ func (i *countryImporter) importCountry() {
 	log.Infof("Got %d stations", len(i.stations))
 	log.Infof("Got %d platforms", len(i.platforms))
 	log.Infof("Got %d stop areas", len(i.stopAreas))
-
-	i.saveStations()
-
-	importerState.State = "finished"
-	importerState.NumberStations = int64(len(i.stations))
-	importerState.NumberPlatforms = int64(len(i.platforms))
-	i.osmImporter.importerRepo.Save(&importerState)
+	i.saveStations(ctx)
 
 	if err := scanner.Err(); err != nil {
-		panic(err)
+		i.osmImporter.repo.UpdateImportState(ctx, repository.UpdateImportStateParams{
+			ID:              state.ID,
+			NumberStations:  0,
+			NumberPlatforms: 0,
+			State:           "failed: " + err.Error(),
+		})
+		log.Errorf("Failed to import country %s: %+v", i.country.Name, err)
+		return
 	}
+
+	i.osmImporter.repo.UpdateImportState(ctx, repository.UpdateImportStateParams{
+		ID:              state.ID,
+		NumberStations:  int32(len(i.stations)),
+		NumberPlatforms: int32(len(i.platforms)),
+		State:           "finished",
+	})
+
 }
 
 func (i *countryImporter) parseOsmData(scanner *osmpbf.Scanner) {
@@ -214,22 +224,26 @@ func (i *countryImporter) parseOsmData(scanner *osmpbf.Scanner) {
 	}
 }
 
-func (i *countryImporter) saveStations() {
+func (i *countryImporter) saveStations(ctx context.Context) {
+	log.Info("Start saving stations")
 	for _, s := range i.stations {
-		bahnStation := station.Station{
-			Model: gorm.Model{
-				ID: uint(s.id),
-			},
-			Country:   i.country,
-			Name:      s.name,
-			Lat:       s.lat,
-			Lng:       s.lng,
-			Operator:  s.operator,
-			Wikidata:  s.wikidata,
-			Wikipedia: s.wikipedia,
-		}
+		i.osmImporter.repo.DeleteStation(ctx, s.id)
+		i.osmImporter.repo.DeletePlatformsForStation(ctx, s.id)
+		i.osmImporter.repo.DeleteStopPositionsForStation(ctx, s.id)
 
-		i.osmImporter.stationRepo.Save(&bahnStation)
+		_, err := i.osmImporter.repo.CreateStation(ctx, repository.CreateStationParams{
+			ID:             s.id,
+			CountryIsoCode: i.country.IsoCode,
+			Name:           s.name,
+			Lat:            s.lat,
+			Lng:            s.lng,
+			Operator:       s.operator,
+			Wikidata:       s.wikidata,
+			Wikipedia:      s.wikipedia,
+		})
+		if err != nil {
+			log.Errorf("Failed to save station: %+v", err)
+		}
 	}
 
 	for _, sa := range i.stopAreas {
@@ -255,12 +269,15 @@ func (i *countryImporter) saveStations() {
 			continue
 		}
 
-		bahnStation := i.osmImporter.stationRepo.Get(uint(stopAreaStation.id))
-		bahnStation.Tracks = len(stopAreaStopPositions)
+		i.osmImporter.repo.UpdateStationNumberOfTracks(ctx, repository.UpdateStationNumberOfTracksParams{
+			ID:     stopAreaStation.id,
+			Tracks: int64(len(stopAreaStopPositions)),
+		})
+
 		positions := make([][]string, 3)
 		for _, sap := range stopAreaPlatforms {
-			bahnStation.Platforms = append(bahnStation.Platforms, station.Platform{
-				Model:     gorm.Model{ID: uint(sap.id)},
+			i.osmImporter.repo.CreatePlatform(ctx, repository.CreatePlatformParams{
+				StationID: stopAreaStation.id,
 				Positions: sap.positions,
 			})
 			positions = append(positions, strings.Split(sap.positions, ";"))
@@ -269,15 +286,13 @@ func (i *countryImporter) saveStations() {
 			neighbors, _ := lo.Find(positions, func(p []string) bool {
 				return lo.Contains(p, sp.position)
 			})
-			bahnStation.StopPosition = append(bahnStation.StopPosition, station.StopPosition{
-				Model:     gorm.Model{ID: uint(sp.id)},
+			i.osmImporter.repo.CreateStopPosition(ctx, repository.CreateStopPositionParams{
+				StationID: stopAreaStation.id,
 				Platform:  sp.position,
 				Lat:       sp.lat,
 				Lng:       sp.lng,
 				Neighbors: strings.Join(neighbors, ";"),
 			})
 		}
-
-		i.osmImporter.stationRepo.Save(bahnStation)
 	}
 }

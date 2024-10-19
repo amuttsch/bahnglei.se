@@ -1,31 +1,34 @@
 package tile
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 
 	"github.com/amuttsch/bahnglei.se/pkg/coordinates"
+	"github.com/amuttsch/bahnglei.se/pkg/repository"
+	"github.com/sirupsen/logrus"
 )
 
 type TileService interface {
-	Tile(x, y, z int64, targetLat, targetLng float64) ([]byte, error)
+	Tile(context context.Context, x, y, z int64, targetLat, targetLng float64) ([]byte, error)
 }
 
 type tileService struct {
-	tileRepo        Repo
+	repository      *repository.Queries
 	tileForstApiKey string
 }
 
-func NewTileService(tileRepo Repo, tileForestApiKey string) *tileService {
+func NewTileService(repository *repository.Queries, tileForestApiKey string) *tileService {
 	return &tileService{
-		tileRepo:        tileRepo,
+		repository:      repository,
 		tileForstApiKey: tileForestApiKey,
 	}
 }
 
-func (ts *tileService) Tile(x, y, z int64, targetLat, targetLng float64) ([]byte, error) {
+func (ts *tileService) Tile(ctx context.Context, x, y, z int64, targetLat, targetLng float64) ([]byte, error) {
 	lat := coordinates.Y2lat(y, z)
 	lon := coordinates.X2lon(x, z)
 
@@ -35,8 +38,12 @@ func (ts *tileService) Tile(x, y, z int64, targetLat, targetLng float64) ([]byte
 		return nil, errors.New("tile not in range")
 	}
 
-	osmTile := ts.tileRepo.Get(uint(x), uint(y), uint(z))
-	if osmTile != nil {
+	osmTile, err := ts.repository.GetTile(ctx, repository.GetTileParams{
+		X: x,
+		Y: y,
+		Z: z,
+	})
+	if err == nil {
 		return osmTile.Data, nil
 	}
 
@@ -53,13 +60,16 @@ func (ts *tileService) Tile(x, y, z int64, targetLat, targetLng float64) ([]byte
 		return nil, err
 	}
 
-	osmTile = &OsmTile{
-		Z:    uint(z),
-		X:    uint(x),
-		Y:    uint(y),
+	_, err = ts.repository.CreateTile(ctx, repository.CreateTileParams{
+		Z:    z,
+		X:    x,
+		Y:    y,
 		Data: image,
+	})
+	if err != nil {
+		logrus.Errorf("Could not create tile: %+v", err)
+		return nil, err
 	}
-	ts.tileRepo.Save(osmTile)
 
 	return image, nil
 }

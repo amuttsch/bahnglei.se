@@ -4,8 +4,7 @@ import (
 	"strconv"
 
 	"github.com/amuttsch/bahnglei.se/pkg/config"
-	"github.com/amuttsch/bahnglei.se/pkg/country"
-	"github.com/amuttsch/bahnglei.se/pkg/station"
+	"github.com/amuttsch/bahnglei.se/pkg/repository"
 	"github.com/amuttsch/bahnglei.se/templates/components"
 	"github.com/amuttsch/bahnglei.se/templates/pages"
 	"github.com/labstack/echo/v4"
@@ -17,14 +16,14 @@ type controller struct {
 	config *config.Config
 }
 
-func Http(e *echo.Echo, config *config.Config, countryRepo country.Repo, stationRepo station.Repo) *controller {
+func Http(e *echo.Echo, config *config.Config, repo *repository.Queries) *controller {
 	e.HEAD("/", func(c echo.Context) error {
 		return c.NoContent(204)
 	})
 
 	e.GET("/", func(c echo.Context) error {
-		stationCount := stationRepo.Count()
-		countryCount := countryRepo.Count()
+		stationCount, _ := repo.CountStations(c.Request().Context())
+		countryCount, _ := repo.CountCountries(c.Request().Context())
 
 		data := pages.IndexProps{
 			CountryCount: strconv.Itoa(int(countryCount)),

@@ -23,7 +23,7 @@
     ),
     url("/assets/img/index-background-2.jpg");
   position: absolute;
-  transform: scale(1.1);
+  transform: scale(1);
   top: 0;
   left: 0;
   width: 100vw;

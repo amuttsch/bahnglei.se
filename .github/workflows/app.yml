@@ -17,7 +17,7 @@ jobs:
       - run: sqlc generate
       - name: Install templ
         shell: bash
-        run: go install github.com/a-h/templ/cmd/templ
+        run: go install github.com/a-h/templ/cmd/templ@latest
       - name: Run templ generate
         shell: bash
         run: templ generate

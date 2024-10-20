@@ -9,3 +9,6 @@ delete from stop_positions where station_id = $1;
 -- name: GetStopPositionsForStation :many
 select * from stop_positions where station_id = $1;
 
+-- name: GetStopPositionsForStationAndPlatform :one
+select * from stop_positions where station_id = $1 and platform = $2;
+

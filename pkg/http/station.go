@@ -1,6 +1,7 @@
 package http
 
 import (
+	"slices"
 	"strconv"
 	"strings"
 
@@ -64,6 +65,25 @@ func Station(e *echo.Echo, config *config.Config, repo *repository.Queries, tile
 			logrus.Error(err)
 		}
 		return stationPage.Render(c.Request().Context(), c.Response().Writer)
+	})
+
+	e.GET("/station/:id/details/:platform", func(c echo.Context) error {
+		id, _ := strconv.Atoi(c.Param("id"))
+		platform := c.Param("platform")
+		stationStopPositions, _ := repo.GetStopPositionsForStationAndPlatform(
+			c.Request().Context(), repository.GetStopPositionsForStationAndPlatformParams{
+				StationID: int64(id),
+				Platform:  platform,
+			})
+
+		neighbors := strings.Split(stationStopPositions.Neighbors, ";")
+		neighbors = slices.DeleteFunc(neighbors, func(n string) bool {
+			return n == platform || n == ""
+		})
+
+		logrus.Info(neighbors, len(neighbors))
+		trackDetails := pages.TrackDetails(platform, neighbors)
+		return trackDetails.Render(c.Request().Context(), c.Response().Writer)
 	})
 
 	e.POST("/station/:id/report", func(c echo.Context) error {

@@ -1,8 +1,6 @@
 package pages
 
 import (
-	"strings"
-	"strconv"
 	"github.com/amuttsch/bahnglei.se/templates/components"
 	"github.com/amuttsch/bahnglei.se/templates/layout"
 	"github.com/amuttsch/bahnglei.se/pkg/repository"
@@ -15,127 +13,20 @@ type StationPageProps struct {
 	StopPosition []repository.StopPosition
 }
 
-func platformButtonHyperscript(stopPosition repository.StopPosition) string {
-	var sb strings.Builder
-	sb.WriteString(" on track[platform=='" + stopPosition.Platform + "']")
-	sb.WriteString("  transition opacity to 1")
-	sb.WriteString(" end on hide")
-	sb.WriteString("  transition opacity to 0.2")
-	sb.WriteString(" end")
-	sb.WriteString(" on click")
-	sb.WriteString("  send hide to .track-marker")
-	for _, stopPosition := range strings.Split(stopPosition.Neighbors, `;`) {
-		sb.WriteString("  send track(platform: '" + stopPosition + "') to .track-marker")
-	}
-
-	sb.WriteString(" end")
-
-	return sb.String()
-}
-
 templ StationPage(props StationPageProps) {
-	@layout.Layout() {
-		@components.StationSearch(props.StationSearchProps)
-		<div>
-			<span class="font-bold">{ props.Station.Name }</span>
-			<div class="flex flex-row flex-wrap">
-				for _, stopPosition := range props.StopPosition {
-					<button
-						class="track-marker border border-white w-8 h-8 font-bold bg-[#1455C0] text-white text-lg text-center"
-						_={ platformButtonHyperscript(stopPosition) }
-					>
-						{ stopPosition.Platform }
-					</button>
-				}
+	@layout.Layout(true) {
+		<div class="h-full flex flex-col space-y-2 w-full">
+			<div class="flex flex-row items-center space-x-4 p-4">
+				<a href="/" class="w-4 h-4">
+					@components.IconArrowBack()
+				</a>
+				<span class="text-xl font-bold">{ props.Station.Name }</span>
 			</div>
-			<div id="map" class="z-10 h-64"></div>
-			<ul>
-				<span>Number of tracks: { strconv.FormatInt(props.Station.Tracks, 10) }</span>
-				<h2 class="font-bold">Tracks that are on the same platform</h2>
-				for _, platform := range props.Platforms {
-					<li>{ platform.Positions }</li>
-				}
-			</ul>
-			<button _="on click send openReport to #default-modal">Report issue</button>
-			<div id="reportResult"></div>
-		</div>
-		<!-- Main modal -->
-		<div
-			_="on openReport remove .hidden end on closeReport add .hidden end"
-			id="default-modal"
-			tabindex="-1"
-			class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full"
-		>
-			<div class="relative p-4 w-full max-w-2xl max-h-full">
-				<!-- Modal content -->
-				<div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
-					<!-- Modal header -->
-					<div
-						class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600"
-					>
-						<h3 class="text-xl font-semibold text-gray-900 dark:text-white">
-							Report issue
-						</h3>
-						<button
-							type="button"
-							class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
-							data-modal-hide="default-modal"
-							_="on click trigger closeReport"
-						>
-							<svg
-								class="w-3 h-3"
-								aria-hidden="true"
-								xmlns="http://www.w3.org/2000/svg"
-								fill="none"
-								viewBox="0 0 14 14"
-							>
-								<path
-									stroke="currentColor"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"
-								></path>
-							</svg>
-							<span class="sr-only">Close modal</span>
-						</button>
-					</div>
-					<!-- Modal body -->
-					<form
-						method="POST"
-						enctype="multipart/form-data"
-						hx-post={ "/station/" + strconv.FormatInt(props.Station.ID, 10) + "/report" }
-						hx-swap="innerHTML"
-						hx-target="#reportResult"
-					>
-						<input type="hidden" name="_csrf" value={ props.CSRFToken }/>
-						<div class="p-4 md:p-5 space-y-4">
-							<p
-								class="text-base leading-relaxed text-gray-500 dark:text-gray-400"
-							>
-								Are tracks missing or misplaced? Describe the issue below.
-							</p>
-							<textarea
-								class="w-full h-32 p-4 border border-gray-200 rounded-lg dark:border-gray-600"
-								placeholder="Describe the issue"
-								id="report"
-								name="report"
-							></textarea>
-						</div>
-						<!-- Modal footer -->
-						<div
-							class="flex items-center p-4 md:p-5 border-t border-gray-200 rounded-b dark:border-gray-600"
-						>
-							<button
-								_="on click trigger closeReport"
-								data-modal-hide="default-modal"
-								type="submit"
-								class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-							>
-								Send report
-							</button>
-						</div>
-					</form>
+			<div id="map" class="rounded-t-3xl shadow-[0_-8px_30px_-15px_rgba(0,0,0,0.3)] z-10 h-[90%]"></div>
+			<div id="trackDetails" class="fixed shadow-[0_-8px_30px_-15px_rgba(0,0,0,0.3)] bottom-0 md:bottom-[25svh] rounded-t-3xl z-50 p-4 bg-[EBEDF5] w-full max-w-[512px]">
+				<div class="flex flex-col">
+					<h2 class="font-bold">Select track for information</h2>
+					@Attribution()
 				</div>
 			</div>
 		</div>
@@ -144,31 +35,72 @@ templ StationPage(props StationPageProps) {
 		<script>
       const station = JSON.parse(document.getElementById('station').textContent);
       const stopPosition = JSON.parse(document.getElementById('stopPosition').textContent);
-      var map = L.map('map').setView([station.Lat, station.Lng], 16);
+      var map = L.map('map', {
+          attribution: false
+        });
+      map.setView([station.Lat, station.Lng], 17);
 
       stopPosition?.forEach(stopPosition => {
         const platform = stopPosition.Platform.replace(' ', '-');
         L.marker([stopPosition.Lat, stopPosition.Lng], {
             riseOnHover: true,
             icon: L.divIcon({
+              className: "dummy",
               iconSize: "auto",
                     html: `
                             <div _="on track[platform=='${ stopPosition.Platform }']
-                                      transition opacity to 1
-                                      then remove .hidden from #track-marker-${ platform }
-                                    end on hide
-                                      transition opacity to 0.2
-                                      then add .hidden to #track-marker-${ platform }
-                                    end" class="track-marker relative">
-                              <div class="absolute block -left-2 -top-2 h-4 w-4 rounded-full bg-red-500"></div>
-                              <div id="track-marker-${ platform }" class="hidden border border-white w-8 h-8 font-bold bg-[#1455C0] text-white text-lg text-center\">${ stopPosition.Platform }</div>
+                                      transition scale to 1.5 then
+                                    end on track[platform!='${ stopPosition.Platform }']
+                                      transition scale to 1.0 then
+                                    end on click
+		                                  send track(platform: '${ stopPosition.Platform }') to .track-marker")
+                                    end" 
+                                    class="track-marker relative"
+                                    hx-get="/station/${station.ID}/details/${stopPosition.Platform}"
+                                    hx-trigger="click"
+                                    hx-target="#trackDetails"
+                                    hx-swap="innerHtml">
+                              <div id="track-marker-${ platform }" class="rounded -translate-x-2/4 -translate-y-2/4 px-1 font-bold bg-[#1455C0] text-white text-sm text-center\">${ stopPosition.Platform }</div>
                             <div>
                             `
             })
         }).addTo(map);
       });
 
+      L.control.attribution({
+        position: 'topright'
+      }).addTo(map);
+
       L.tileLayer(`/station/${station.ID}/tile/{z}/{x}/{y}.png`).addTo(map);
   </script>
 	}
+}
+
+templ TrackDetails(plaform string, neighbors []string) {
+	<div class="flex flex-col space-y-2">
+		<span class="text-md font-bold">
+			Platform <strong>{ plaform }</strong>
+		</span>
+		<span class="text-sm">
+			Neighboring tracks:
+		</span>
+		<div class="flex flex-row space-x-2">
+			if len(neighbors) == 0 {
+				<span class="text-xs">
+					This platform has only this one track.
+				</span>
+			} else {
+				for _, n := range neighbors {
+					<div class="rounded px-2 font-bold bg-[#1455C0] text-white text-sm text-center">
+						{ n }
+					</div>
+				}
+			}
+		</div>
+		@Attribution()
+	</div>
+}
+
+templ Attribution() {
+	<span class="pt-2 text-[10px]">Maps © <a href="https://www.thunderforest.com/">Thunderforest</a>, Data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a></span>
 }

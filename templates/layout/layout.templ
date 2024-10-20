@@ -5,11 +5,11 @@ import (
 	"github.com/amuttsch/bahnglei.se/templates/components"
 )
 
-templ Layout() {
+templ Layout(fullscreen bool) {
 	<html>
 		<head>
 			<title>Bahnglei.se</title>
-			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
 			<script src={ templates.Asset(`js/htmx.min.js`) }></script>
 			<script src={ templates.Asset(`js/hyperscript.js`) }></script>
 			<link
@@ -38,11 +38,17 @@ templ Layout() {
 		</head>
 		<body class="h-full bg-[EBEDF5]">
 			<div class="h-full grid grid-rows-[auto_1fr_auto]">
-				@components.Header()
-				<main class="max-w-[512px] mx-auto pt-2">
-					{ children... }
-				</main>
-				@components.Footer()
+				if !fullscreen {
+					@components.Header()
+					<main class="max-w-[512px] mx-auto pt-2">
+						{ children... }
+					</main>
+					@components.Footer()
+				} else {
+					<main class="w-full h-svh max-w-[512px] md:max-h-[75svh] mx-auto">
+						{ children... }
+					</main>
+				}
 			</div>
 			<script type="text/javascript">
       document.addEventListener("DOMContentLoaded", (event) => {

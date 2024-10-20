@@ -1,10 +1,11 @@
-package station
+package http
 
 import (
 	"strconv"
 	"strings"
 
 	"github.com/amuttsch/bahnglei.se/pkg/config"
+	"github.com/amuttsch/bahnglei.se/pkg/cookies"
 	"github.com/amuttsch/bahnglei.se/pkg/repository"
 	"github.com/amuttsch/bahnglei.se/pkg/tile"
 	"github.com/amuttsch/bahnglei.se/templates/components"
@@ -14,7 +15,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type controller struct {
+type controllerStation struct {
 	e      *echo.Echo
 	config *config.Config
 }
@@ -23,7 +24,7 @@ type StationData struct {
 	components.StationSearchProps
 }
 
-func Http(e *echo.Echo, config *config.Config, repo *repository.Queries, tileService tile.TileService) *controller {
+func Station(e *echo.Echo, config *config.Config, repo *repository.Queries, tileService tile.TileService) *controllerStation {
 	e.POST("/station", func(c echo.Context) error {
 		searchString := "%" + c.FormValue("station") + "%"
 		stations, _ := repo.SearchStations(c.Request().Context(), searchString)
@@ -58,6 +59,10 @@ func Http(e *echo.Echo, config *config.Config, repo *repository.Queries, tileSer
 		}
 
 		stationPage := pages.StationPage(data)
+		err := cookies.SetStationCookie(c, station)
+		if err != nil {
+			logrus.Error(err)
+		}
 		return stationPage.Render(c.Request().Context(), c.Response().Writer)
 	})
 
@@ -93,7 +98,7 @@ func Http(e *echo.Echo, config *config.Config, repo *repository.Queries, tileSer
 		return c.Blob(200, "image/png", image)
 	})
 
-	return &controller{
+	return &controllerStation{
 		e:      e,
 		config: config,
 	}

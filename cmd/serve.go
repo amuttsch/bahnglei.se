@@ -7,9 +7,8 @@ import (
 	"os"
 
 	"github.com/amuttsch/bahnglei.se/pkg/config"
-	"github.com/amuttsch/bahnglei.se/pkg/index"
+	bahnHttp "github.com/amuttsch/bahnglei.se/pkg/http"
 	"github.com/amuttsch/bahnglei.se/pkg/repository"
-	"github.com/amuttsch/bahnglei.se/pkg/station"
 	"github.com/amuttsch/bahnglei.se/pkg/tile"
 	"github.com/benbjohnson/hashfs"
 	migrate "github.com/golang-migrate/migrate/v4"
@@ -72,8 +71,8 @@ var serveCmd = &cobra.Command{
 
 		e.GET("/assets/*", echo.WrapHandler(hashfs.FileServer(AssetFS)))
 
-		index.Http(e, conf, repo)
-		station.Http(e, conf, repo, tileService)
+		bahnHttp.Index(e, conf, repo)
+		bahnHttp.Station(e, conf, repo, tileService)
 
 		go func() {
 			metrics := echo.New()                                // this Echo will run on separate port 8081

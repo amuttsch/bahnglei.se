@@ -1,22 +1,24 @@
-package index
+package http
 
 import (
 	"strconv"
 
 	"github.com/amuttsch/bahnglei.se/pkg/config"
+	"github.com/amuttsch/bahnglei.se/pkg/cookies"
 	"github.com/amuttsch/bahnglei.se/pkg/repository"
 	"github.com/amuttsch/bahnglei.se/templates/components"
 	"github.com/amuttsch/bahnglei.se/templates/pages"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/sirupsen/logrus"
 )
 
-type controller struct {
+type controllerIndex struct {
 	e      *echo.Echo
 	config *config.Config
 }
 
-func Http(e *echo.Echo, config *config.Config, repo *repository.Queries) *controller {
+func Index(e *echo.Echo, config *config.Config, repo *repository.Queries) *controllerIndex {
 	e.HEAD("/", func(c echo.Context) error {
 		return c.NoContent(204)
 	})
@@ -24,6 +26,11 @@ func Http(e *echo.Echo, config *config.Config, repo *repository.Queries) *contro
 	e.GET("/", func(c echo.Context) error {
 		stationCount, _ := repo.CountStations(c.Request().Context())
 		countryCount, _ := repo.CountCountries(c.Request().Context())
+		recentStations, err := cookies.GetRecentStations(c)
+		if err != nil {
+			logrus.Error(err)
+		}
+		logrus.Info(recentStations)
 
 		data := pages.IndexProps{
 			CountryCount: strconv.Itoa(int(countryCount)),
@@ -31,12 +38,13 @@ func Http(e *echo.Echo, config *config.Config, repo *repository.Queries) *contro
 			StationSearchProps: components.StationSearchProps{
 				CSRFToken: c.Get(middleware.DefaultCSRFConfig.ContextKey).(string),
 			},
+			RecentStations: recentStations,
 		}
 		index := pages.IndexPage(data)
 		return index.Render(c.Request().Context(), c.Response().Writer)
 	})
 
-	return &controller{
+	return &controllerIndex{
 		e:      e,
 		config: config,
 	}

@@ -26,7 +26,7 @@ jobs:
 
       - name: Run templ generate
         run: templ generate
-      - run: go test
+      - run: go test ./...
 
   deploy:
     name: Deploy app

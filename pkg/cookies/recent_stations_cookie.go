@@ -34,7 +34,7 @@ func SetStationCookie(c echo.Context, station repository.Station) error {
 	})
 
 	if len(recentStations) > MAX_RECENT_STATIONS {
-		recentStations = slices.Delete(recentStations, MAX_RECENT_STATIONS-1, len(recentStations))
+		recentStations = slices.Delete(recentStations, MAX_RECENT_STATIONS, len(recentStations))
 	}
 
 	stationJson, err := json.Marshal(recentStations)

@@ -30,7 +30,6 @@ func Index(e *echo.Echo, config *config.Config, repo *repository.Queries) *contr
 		if err != nil {
 			logrus.Error(err)
 		}
-		logrus.Info(recentStations)
 
 		data := pages.IndexProps{
 			CountryCount: strconv.Itoa(int(countryCount)),
@@ -41,6 +40,18 @@ func Index(e *echo.Echo, config *config.Config, repo *repository.Queries) *contr
 			RecentStations: recentStations,
 		}
 		index := pages.IndexPage(data)
+		return index.Render(c.Request().Context(), c.Response().Writer)
+	})
+
+	e.GET("/about", func(c echo.Context) error {
+		countryCount, _ := repo.CountCountries(c.Request().Context())
+		countries, _ := repo.GetCountries(c.Request().Context())
+
+		data := pages.AboutPageProps{
+			CountryCount: countryCount,
+			Countries:    countries,
+		}
+		index := pages.AboutPage(data)
 		return index.Render(c.Request().Context(), c.Response().Writer)
 	})
 

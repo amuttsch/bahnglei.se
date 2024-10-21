@@ -2,5 +2,7 @@ databaseUrl: postgres://postgres:postgres@localhost:5432/bahngleise?sslmode=disa
 countries:
   - iso: DE
     name: Germany
-    #url: http://localhost:8100/germany-latest.osm.pbf
     url: https://download.geofabrik.de/europe/germany-latest.osm.pbf
+  - iso: FR
+    name: France
+    url: https://download.geofabrik.de/europe/france-latest.osm.pbf

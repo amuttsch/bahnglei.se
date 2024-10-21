@@ -1,0 +1,48 @@
+package pages
+
+import (
+	"github.com/amuttsch/bahnglei.se/templates/components"
+	"github.com/amuttsch/bahnglei.se/templates/layout"
+	"strconv"
+	"strings"
+	"github.com/amuttsch/bahnglei.se/pkg/repository"
+)
+
+type AboutPageProps struct {
+	CountryCount int64
+	Countries    []repository.GetCountriesRow
+}
+
+templ AboutPage(props AboutPageProps) {
+	@layout.Layout(true) {
+		<div class="h-full flex flex-col space-y-2 w-full">
+			<div class="flex flex-row items-center space-x-4 p-4">
+				<a href="/" class="w-4 h-4">
+					@components.IconArrowBack()
+				</a>
+				<span class="text-xl font-bold">About</span>
+			</div>
+			<div class="p-4 flex flex-col space-y-2">
+				<span>Bahnglei.se is a website that gives you details for a given train station. You can see which tracks are on the same platform. It aims to help plan you train changes if you need to hurry and get to another platform or if your connection train departs from the the same platform.</span>
+				<span class="font-bold">Currently bahnglei.se supports { strconv.FormatInt(props.CountryCount, 10) } countries:</span>
+				for _, c := range props.Countries {
+					<div class="flex flex-row space-x-2 items-center">
+						<img class="w-12" src={ getFlagUrl(c) }/>
+						<div class="flex flex-col">
+							<span class="font-bold">{ c.Name }</span>
+							<span class="text-sm">Stations: { strconv.FormatInt(c.Stations, 10) }</span>
+						</div>
+					</div>
+				}
+				<span class="text-xs pt-4">
+					Landing page image: 
+					<a href="https://www.freepik.com/free-ai-image/retro-holiday-illustration_360829199.htm#fromView=image_search_similar&page=1&position=10&uuid=04d763cc-b261-4fd2-8035-ab6c68903cfb">Image by freepik</a>
+				</span>
+			</div>
+		</div>
+	}
+}
+
+func getFlagUrl(country repository.GetCountriesRow) string {
+	return "/assets/img/flags/" + strings.ToLower(country.IsoCode) + ".svg"
+}

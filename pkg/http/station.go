@@ -33,8 +33,9 @@ func Station(e *echo.Echo, config *config.Config, repo *repository.Queries, tile
 
 		for i, station := range stations {
 			stationData[i] = components.StationSearchElement{
-				ID:   strconv.Itoa(int(station.ID)),
-				Name: station.Name,
+				ID:         strconv.Itoa(int(station.ID)),
+				Name:       station.Name,
+				CountryIso: station.CountryIsoCode,
 			}
 		}
 		data := components.StationSearchProps{

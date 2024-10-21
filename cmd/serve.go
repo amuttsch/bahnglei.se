@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"crypto/subtle"
 	"errors"
 	"net/http"
 	"os"
@@ -58,15 +57,6 @@ var serveCmd = &cobra.Command{
 		e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(20)))
 		e.Use(middleware.CSRFWithConfig(middleware.CSRFConfig{
 			TokenLookup: "form:_csrf",
-		}))
-
-		e.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
-			// Be careful to use constant time comparison to prevent timing attacks
-			if subtle.ConstantTimeCompare([]byte(username), []byte("joe")) == 1 &&
-				subtle.ConstantTimeCompare([]byte(password), []byte("secret")) == 1 {
-				return true, nil
-			}
-			return false, nil
 		}))
 
 		e.GET("/assets/*", echo.WrapHandler(hashfs.FileServer(AssetFS)))

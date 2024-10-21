@@ -81,7 +81,6 @@ func Station(e *echo.Echo, config *config.Config, repo *repository.Queries, tile
 			return n == platform || n == ""
 		})
 
-		logrus.Info(neighbors, len(neighbors))
 		trackDetails := pages.TrackDetails(platform, neighbors)
 		return trackDetails.Render(c.Request().Context(), c.Response().Writer)
 	})

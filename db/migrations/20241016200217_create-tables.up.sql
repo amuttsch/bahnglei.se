@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS stations (
 );
 
 CREATE TABLE IF NOT EXISTS platforms (
-  id serial primary key,
+  id bigint primary key,
   positions text not null,
   station_id bigint not null,
   created_at timestamp
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS platforms (
 );
 
 CREATE TABLE IF NOT EXISTS stop_positions (
-  id SERIAL PRIMARY KEY,
+  id bigint PRIMARY KEY,
   station_id bigint NOT NULL,
   platform text not null,
   lat float not null,
@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS stop_positions (
 );
 
 CREATE TABLE IF NOT EXISTS osm_tiles (
-  id SERIAL PRIMARY KEY,
+  id BIGSERIAL PRIMARY KEY,
   x bigint not null,
   y bigint not null,
   z bigint not null,

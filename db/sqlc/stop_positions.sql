@@ -1,6 +1,6 @@
 -- name: CreateStopPosition :one
-insert into stop_positions (station_id, platform, lat, lng, neighbors) 
-  values ($1, $2, $3, $4, $5) 
+insert into stop_positions (id, station_id, platform, lat, lng, neighbors) 
+  values ($1, $2, $3, $4, $5, $6) 
   returning *;
 
 -- name: DeleteStopPositionsForStation :exec

@@ -13,6 +13,7 @@ import (
 	"github.com/paulmach/osm/osmpbf"
 	"github.com/samber/lo"
 
+	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -227,9 +228,9 @@ func (i *countryImporter) parseOsmData(scanner *osmpbf.Scanner) {
 func (i *countryImporter) saveStations(ctx context.Context) {
 	log.Info("Start saving stations")
 	for _, s := range i.stations {
-		i.osmImporter.repo.DeleteStation(ctx, s.id)
 		i.osmImporter.repo.DeletePlatformsForStation(ctx, s.id)
 		i.osmImporter.repo.DeleteStopPositionsForStation(ctx, s.id)
+		i.osmImporter.repo.DeleteStation(ctx, s.id)
 
 		_, err := i.osmImporter.repo.CreateStation(ctx, repository.CreateStationParams{
 			ID:             s.id,
@@ -277,6 +278,7 @@ func (i *countryImporter) saveStations(ctx context.Context) {
 		positions := make([][]string, 3)
 		for _, sap := range stopAreaPlatforms {
 			i.osmImporter.repo.CreatePlatform(ctx, repository.CreatePlatformParams{
+				ID:        sap.id,
 				StationID: stopAreaStation.id,
 				Positions: sap.positions,
 			})
@@ -287,6 +289,7 @@ func (i *countryImporter) saveStations(ctx context.Context) {
 				return lo.Contains(p, sp.position)
 			})
 			i.osmImporter.repo.CreateStopPosition(ctx, repository.CreateStopPositionParams{
+				ID:        sp.id,
 				StationID: stopAreaStation.id,
 				Platform:  sp.position,
 				Lat:       sp.lat,

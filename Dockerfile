@@ -39,6 +39,7 @@ FROM scratch
 
 WORKDIR /app
 COPY --from=build /app/bahngleise /app/bahngleise
+COPY --from=build /app/db/migrations /app/db/migrations
 COPY --from=build /app/config.fly.yml /app/config.yml 
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 

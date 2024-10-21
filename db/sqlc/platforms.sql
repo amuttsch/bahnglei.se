@@ -1,6 +1,6 @@
 -- name: CreatePlatform :one
-insert into platforms (station_id, positions) 
-  values ($1, $2) 
+insert into platforms (id, station_id, positions) 
+  values ($1, $2, $3) 
   returning *;
 
 -- name: DeletePlatformsForStation :exec

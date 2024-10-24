@@ -15,6 +15,7 @@ templ Layout(fullscreen bool) {
 			<link rel="preload" as="stylesheet" href={ templates.Asset(`css/style.css`) }/>
 			<link rel="preload" as="image" href={ templates.Asset("img/icon.png") }/>
 			<link rel="preload" as="image" href="/assets/img/index-background-2.jpg"/>
+			<link rel="preload" as="font" href="/assets/fonts/poppins-v21-latin-regular.woff2" crossorigin/>
 			<link
 				rel="stylesheet"
 				href={ templates.Asset(`css/leaflet.css`) }
@@ -38,6 +39,34 @@ templ Layout(fullscreen bool) {
 				sizes="16x16"
 				href="/img/favicon-16x16.png"
 			/>
+			<style>
+/* poppins-regular - latin */
+@font-face {
+  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+  font-family: "Poppins";
+  font-style: normal;
+  font-weight: 400;
+  src: url("/assets/fonts/poppins-v21-latin-regular.woff2") format("woff2"); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
+#index-bg {
+  background-image: linear-gradient(
+      to top,
+      rgba(235, 237, 245, 0),
+      rgba(235, 237, 245, 1)
+    ),
+    url("/assets/img/index-background-2.jpg");
+  position: absolute;
+  transform: scale(1);
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-repeat: no-repeat;
+  z-index: -1;
+  background-size: cover;
+}
+      </style>
 		</head>
 		<body class="h-full bg-[EBEDF5]">
 			<div class="h-full grid grid-rows-[auto_1fr_auto]">

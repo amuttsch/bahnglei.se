@@ -2,33 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* poppins-regular - latin */
-@font-face {
-  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
-  font-family: "Poppins";
-  font-style: normal;
-  font-weight: 400;
-  src: url("../fonts/poppins-v21-latin-regular.woff2") format("woff2"); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
-}
-
 .z-force {
   z-index: 50 !important;
-}
-
-#index-bg {
-  background-image: linear-gradient(
-      to top,
-      rgba(235, 237, 245, 0),
-      rgba(235, 237, 245, 1)
-    ),
-    url("/assets/img/index-background-2.jpg");
-  position: absolute;
-  transform: scale(1);
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-repeat: no-repeat;
-  z-index: -1;
-  background-size: cover;
 }

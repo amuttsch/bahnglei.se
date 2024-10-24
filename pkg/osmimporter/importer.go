@@ -13,7 +13,6 @@ import (
 	"github.com/paulmach/osm/osmpbf"
 	"github.com/samber/lo"
 
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -298,4 +297,5 @@ func (i *countryImporter) saveStations(ctx context.Context) {
 			})
 		}
 	}
+
 }

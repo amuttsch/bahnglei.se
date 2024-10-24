@@ -59,7 +59,18 @@ var serveCmd = &cobra.Command{
 			TokenLookup: "form:_csrf",
 		}))
 
-		e.GET("/assets/*", echo.WrapHandler(hashfs.FileServer(AssetFS)))
+		// Add default cache for non hashfs files
+		cacheControlHeaderMiddleware := func(next echo.HandlerFunc) echo.HandlerFunc {
+			return func(c echo.Context) error {
+				c.Response().Header().Add("Cache-Control", "max-age=604800")
+				return next(c)
+			}
+		}
+		e.Add(http.MethodGet,
+			"/assets/*",
+			echo.WrapHandler(hashfs.FileServer(AssetFS)),
+			cacheControlHeaderMiddleware,
+		)
 
 		bahnHttp.Index(e, conf, repo)
 		bahnHttp.Station(e, conf, repo, tileService)

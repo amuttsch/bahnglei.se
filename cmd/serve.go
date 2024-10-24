@@ -54,7 +54,7 @@ var serveCmd = &cobra.Command{
 		e.Use(middleware.Logger())
 		e.Use(echoprometheus.NewMiddleware("bahngleise"))
 		e.Use(middleware.Gzip())
-		e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(20)))
+		// e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(20)))
 		e.Use(middleware.CSRFWithConfig(middleware.CSRFConfig{
 			TokenLookup: "form:_csrf",
 		}))

@@ -16,7 +16,7 @@ type StationSearchProps struct {
 }
 
 templ StationSearch(stationList StationSearchProps) {
-	<div id="search" class="flex flex-col rounded-t-[24px] z-50 space-y-2">
+	<div id="search" class="flex flex-col space-y-2 rounded-t-[24px] z-50">
 		<div id="searchHeader" class="hidden grid grid-cols-3">
 			<div class="self-center">
 				<button
@@ -25,14 +25,7 @@ templ StationSearch(stationList StationSearchProps) {
 					_="on click
             add .hidden to #searchHeader then
             add .hidden to #stationlist then
-            remove .px-4 from #search then
-            remove .absolute from #search then
-            remove .top-8 from #search then
-            remove .left-0 from #search then
-            remove .bg-white from #search then
-            remove .shadow from #search then
-            remove .h-svh from #search then
-            remove .w-svw from #search 
+            remove .search-overlay from #search
         "
 				>Cancel</button>
 			</div>
@@ -43,21 +36,14 @@ templ StationSearch(stationList StationSearchProps) {
 			onkeydown="return event.key != 'Enter';"
 			hx-post="/station"
 			hx-trigger="keyup[target.value.length >= 3] changed from:input delay:250ms"
-			hx-swap="innerHTML"
+			hx-swap="outerHTML"
 			hx-target="#stationlist"
 			autocomplete="off"
 			class="mb-0 transition ease-in-out duration-500"
 			_="on click
             remove .hidden from #searchHeader then
             remove .hidden from #stationlist then
-            add .px-4 to #search then
-            add .absolute to #search then
-            add .shadow to #search then
-            add .top-8 to #search then
-            add .left-0 to #search then
-            add .bg-white to #search then
-            add .h-svh to #search then
-            add .w-svw to #search
+            add .search-overlay to #search
           "
 		>
 			<input type="hidden" name="_csrf" value={ stationList.CSRFToken }/>
@@ -77,7 +63,7 @@ func getStationUrl(id string) string {
 }
 
 templ StationSearchResultList(stationList StationSearchProps) {
-	<div id="stationlist">
+	<div id="stationlist" class="overflow-y-scroll">
 		<ul>
 			for _, item := range stationList.Stations {
 				@StationSearchResultListItem(item)

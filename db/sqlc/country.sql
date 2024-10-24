@@ -8,5 +8,9 @@ INSERT INTO countries (created_at, updated_at, iso_code, name, osm_url)
 select count(*) from countries;
 
 -- name: GetCountries :many
-select c.*, count(s.id) stations from countries c left join stations s on s.country_iso_code = c.iso_code group by c.iso_code;
+select c.*, count(s.id) stations 
+from countries c 
+left join stations s on s.country_iso_code = c.iso_code 
+group by c.iso_code
+order by c.name;
 

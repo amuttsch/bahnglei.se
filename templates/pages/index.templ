@@ -23,7 +23,7 @@ templ IndexPage(data IndexProps) {
 		</div>
 		<div class="space-y-1">
 			<span class="text-sm">Recent</span>
-			<div class="flex flex-row space-x-2 max-w-xs md:max-w-md overflow-x-scroll">
+			<div class="flex flex-row pb-2 space-x-2 max-w-xs md:max-w-md overflow-x-scroll">
 				for _, station := range data.RecentStations {
 					@Recent(station)
 				}

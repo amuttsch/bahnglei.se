@@ -35,7 +35,7 @@ COPY --from=tailwind /app/assets /app/assets
 # Build
 RUN CGO_ENABLED=0 GOOS=linux go build -buildvcs=false -o bahngleise
 
-FROM scratch
+FROM debian:bookworm-slim
 
 WORKDIR /app
 COPY --from=build /app/bahngleise /app/bahngleise

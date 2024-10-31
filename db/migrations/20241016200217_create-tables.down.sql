@@ -4,6 +4,8 @@ DROP TABLE stop_positions;
 
 DROP TABLE platforms;
 
+DROP TABLE platform_nodes;
+
 DROP TABLE stations;
 
 DROP TABLE countries;

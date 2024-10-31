@@ -3,3 +3,9 @@ countries:
   - iso: CH
     name: Switzerland
     url: http://localhost:8100/switzerland-latest.osm.pbf
+  - iso: DE
+    name: Germany
+    url: http://localhost:8100/germany-latest.osm.pbf
+  - iso: FR
+    name: France
+    url: http://localhost:8100/france-latest.osm.pbf

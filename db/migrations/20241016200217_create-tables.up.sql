@@ -14,8 +14,7 @@ CREATE TABLE IF NOT EXISTS stations (
   id bigint PRIMARY KEY,
   country_iso_code text not null,
   name text not null,
-  lat float not null,
-  lng float not null,
+  coordinate point not null,
   operator text not null,
   wikidata text not null,
   wikipedia text not null,
@@ -32,7 +31,8 @@ CREATE TABLE IF NOT EXISTS stations (
 CREATE TABLE IF NOT EXISTS platforms (
   id bigint primary key,
   positions text not null,
-  station_id bigint not null,
+  station_id bigint,
+  coordinate point,
   created_at timestamp
   with
     time zone not null default current_timestamp,
@@ -42,20 +42,25 @@ CREATE TABLE IF NOT EXISTS platforms (
     CONSTRAINT fk_stations_platforms FOREIGN KEY (station_id) REFERENCES stations (id) MATCH SIMPLE ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 
+CREATE TABLE platform_nodes (
+  id bigint primary key,
+  platform_id bigint not null,
+  coordinate point,
+  CONSTRAINT fk_platforms FOREIGN KEY (platform_id) REFERENCES platforms (id) MATCH SIMPLE ON UPDATE NO ACTION ON DELETE NO ACTION
+);
+
 CREATE TABLE IF NOT EXISTS stop_positions (
   id bigint PRIMARY KEY,
-  station_id bigint NOT NULL,
-  platform text not null,
-  lat float not null,
-  lng float not null,
-  neighbors text not null,
+  station_id bigint,
+  platform text not null default '',
+  coordinate point not null,
+  neighbors text not null default '',
   created_at timestamp
   with
     time zone default current_timestamp,
     updated_at timestamp
   with
-    time zone not null default current_timestamp,
-    CONSTRAINT fk_stations_stop_position FOREIGN KEY (station_id) REFERENCES public.stations (id) MATCH SIMPLE ON UPDATE NO ACTION ON DELETE NO ACTION
+    time zone not null default current_timestamp
 );
 
 CREATE TABLE IF NOT EXISTS osm_tiles (
@@ -85,4 +90,6 @@ CREATE TABLE IF NOT EXISTS import_state (
   with
     time zone not null default current_timestamp,
     CONSTRAINT fk_import_state_country FOREIGN KEY (country_iso_code) REFERENCES countries (iso_code) MATCH SIMPLE ON UPDATE NO ACTION ON DELETE NO ACTION
-)
+);
+
+CREATE TEMPORARY TABLE tmp_nodes (id bigint primary key, coordinate point) ON COMMIT DELETE ROWS;

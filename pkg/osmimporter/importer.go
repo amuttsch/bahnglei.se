@@ -5,53 +5,31 @@ import (
 	"fmt"
 	"net/http"
 	"runtime"
-	"strings"
 
 	"github.com/amuttsch/bahnglei.se/pkg/config"
 	"github.com/amuttsch/bahnglei.se/pkg/repository"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/paulmach/osm"
 	"github.com/paulmach/osm/osmpbf"
-	"github.com/samber/lo"
 
 	log "github.com/sirupsen/logrus"
 )
 
+type parser interface {
+	parse(object osm.Object)
+}
+
 type osmImporter struct {
 	config *config.Config
 	repo   *repository.Queries
+	db     *pgxpool.Pool
 }
 
-type osmStation struct {
-	id        int64
-	name      string
-	lat       float64
-	lng       float64
-	operator  string
-	wikidata  string
-	wikipedia string
-}
-
-type osmPlatform struct {
-	id        int64
-	positions string
-}
-
-type osmStopPosition struct {
-	id       int64
-	position string
-	lat      float64
-	lng      float64
-}
-
-type osmStopArea struct {
-	id      int
-	members []int64
-}
-
-func New(config *config.Config, repo *repository.Queries) *osmImporter {
+func New(config *config.Config, repo *repository.Queries, db *pgxpool.Pool) *osmImporter {
 	return &osmImporter{
 		repo:   repo,
 		config: config,
+		db:     db,
 	}
 }
 
@@ -67,235 +45,156 @@ func (i *osmImporter) Import(ctx context.Context) {
 			return
 		}
 
-		ci := countryImporter{
-			country:       country,
-			osmImporter:   i,
-			stations:      make(map[int64]osmStation),
-			platforms:     make(map[int64]osmPlatform),
-			stopPositions: make(map[int64]osmStopPosition),
-			stopAreas:     []osmStopArea{},
+		state, err := i.repo.CreateImportState(ctx, country.IsoCode)
+		if err != nil {
+			log.Errorf("Failed to import country %s: %+v", country.Name, err)
+			return
 		}
-		ci.importCountry(ctx)
+		err = i.importFirstPass(ctx, country, state.ID)
+		if err != nil {
+			log.Errorf("Failed to import country %s: %+v", country.Name, err)
+			return
+		}
+		err = i.importSecondPass(ctx, country, state.ID)
+		if err != nil {
+			log.Errorf("Failed to import country %s: %+v", country.Name, err)
+			return
+		}
 	}
 }
 
-type countryImporter struct {
-	country       repository.Country
-	osmImporter   *osmImporter
-	stations      map[int64]osmStation
-	platforms     map[int64]osmPlatform
-	stopPositions map[int64]osmStopPosition
-	stopAreas     []osmStopArea
-}
+func (i *osmImporter) importFirstPass(ctx context.Context, country repository.Country, stateId int32) error {
+	log.Infof("Importing country %s from %s", country.IsoCode, country.OsmUrl)
 
-func (i *countryImporter) importCountry(ctx context.Context) {
-	state, err := i.osmImporter.repo.CreateImportState(ctx, i.country.IsoCode)
+	response, err := http.Get(country.OsmUrl)
 	if err != nil {
 		fmt.Println(err)
-	}
-
-	log.Infof("Importing country %s from %s", i.country.IsoCode, i.country.OsmUrl)
-
-	response, err := http.Get(i.country.OsmUrl)
-	if err != nil {
-		fmt.Println(err)
-		i.osmImporter.repo.UpdateImportState(ctx, repository.UpdateImportStateParams{
-			ID:              state.ID,
+		i.repo.UpdateImportState(ctx, repository.UpdateImportStateParams{
+			ID:              stateId,
 			NumberStations:  0,
 			NumberPlatforms: 0,
 			State:           "failed: Get OSM data",
 		})
 
-		return
+		return err
 	}
 
 	defer response.Body.Close()
+
+	platformParser := newPlatformParser(i.db, ctx, i.repo)
+	stationParser := newStationParser(i.db, ctx, i.repo, country.IsoCode)
+	stopPositionParser := newStopPositionParser(i.db, ctx, i.repo)
 
 	scanner := osmpbf.New(ctx, response.Body, runtime.GOMAXPROCS(-1))
 	defer scanner.Close()
 
 	for scanner.Scan() {
-		i.parseOsmData(scanner)
+		osmObject := scanner.Object()
+		platformParser.parse(osmObject)
+		stationParser.parse(osmObject)
+		stopPositionParser.parse(osmObject)
 	}
 
-	log.Infof("Got %d stations", len(i.stations))
-	log.Infof("Got %d platforms", len(i.platforms))
-	log.Infof("Got %d stop areas", len(i.stopAreas))
-	i.saveStations(ctx)
+	log.Infof("Got %d stations", stationParser.numElements)
+	log.Infof("Got %d platforms", platformParser.numElements)
+	log.Infof("Got %d stop positions", stopPositionParser.numElements)
 
 	if err := scanner.Err(); err != nil {
-		i.osmImporter.repo.UpdateImportState(ctx, repository.UpdateImportStateParams{
-			ID:              state.ID,
+		i.repo.UpdateImportState(ctx, repository.UpdateImportStateParams{
+			ID:              stateId,
 			NumberStations:  0,
 			NumberPlatforms: 0,
 			State:           "failed: " + err.Error(),
 		})
-		log.Errorf("Failed to import country %s: %+v", i.country.Name, err)
-		return
+		log.Errorf("Failed to import country %s: %+v", country.Name, err)
+		return err
 	}
 
-	i.osmImporter.repo.UpdateImportState(ctx, repository.UpdateImportStateParams{
-		ID:              state.ID,
-		NumberStations:  int32(len(i.stations)),
-		NumberPlatforms: int32(len(i.platforms)),
-		State:           "finished",
+	log.Info("Calculating stations for stop positions")
+	for count, err := i.repo.CountStopPositionsWithoutStation(ctx); err == nil && count > 0; count, err = i.repo.CountStopPositionsWithoutStation(ctx) {
+		log.Infof("Updating 100 station ids for stop position. Left: %d", count)
+		i.repo.SetStopPositionStationIdToNearestStation(ctx)
+	}
+
+	i.repo.UpdateImportState(ctx, repository.UpdateImportStateParams{
+		ID:              stateId,
+		NumberStations:  int32(stationParser.numElements),
+		NumberPlatforms: int32(platformParser.numElements),
+		State:           "1st pass done",
 	})
 
+	return nil
+
 }
 
-func (i *countryImporter) parseOsmData(scanner *osmpbf.Scanner) {
-	switch o := scanner.Object().(type) {
-	case *osm.Node:
-		isStation := o.Tags.Find("public_transport") == "station"
-		isStopPosition := o.Tags.Find("public_transport") == "stop_position"
-		railwayTag := o.Tags.Find("railway")
-		if railwayTag == "" {
-			break
-		}
+func (i *osmImporter) importSecondPass(ctx context.Context, country repository.Country, stateId int32) error {
 
-		isRailwayStation := railwayTag == "halt" || railwayTag == "station"
-		isRailwayStop := railwayTag == "stop"
-		isTrain := o.Tags.Find("train") == "yes"
-
-		if isStation && isRailwayStation {
-			elementID := o.ID
-			i.stations[int64(elementID)] = osmStation{
-				id:        int64(elementID),
-				name:      o.Tags.Find("name"),
-				lat:       o.Lat,
-				lng:       o.Lon,
-				operator:  o.Tags.Find("operator"),
-				wikidata:  o.Tags.Find("wikidata"),
-				wikipedia: o.Tags.Find("wikipedia"),
-			}
-		}
-
-		if isTrain && isStopPosition && isRailwayStop {
-			ref := o.Tags.Find("ref")
-			localRef := o.Tags.Find("local_ref")
-			position := ref
-			if localRef != "" {
-				position = localRef
-			}
-			i.stopPositions[int64(o.ID)] = osmStopPosition{
-				id:       int64(o.ID),
-				position: position,
-				lat:      o.Lat,
-				lng:      o.Lon,
-			}
-		}
-	case *osm.Way:
-		isTrain := o.Tags.Find("train") == "yes"
-		ref := o.Tags.Find("ref")
-		isPlatform := o.Tags.Find("public_transport") == "platform" || o.Tags.Find("railway") == "platform"
-
-		if isTrain && isPlatform {
-			i.platforms[int64(o.ID)] = osmPlatform{
-				id:        int64(o.ID),
-				positions: ref,
-			}
-		}
-
-	case *osm.Relation:
-		isStopArea := o.Tags.Find("public_transport") == "stop_area"
-		isPublicTransport := o.Tags.Find("type") == "public_transport"
-
-		isTrain := o.Tags.Find("train") == "yes"
-		ref := o.Tags.Find("ref")
-		isPlatform := o.Tags.Find("public_transport") == "platform" || o.Tags.Find("railway") == "platform"
-
-		if isTrain && isPlatform {
-			i.platforms[int64(o.ID)] = osmPlatform{
-				id:        int64(o.ID),
-				positions: ref,
-			}
-		}
-
-		if isStopArea && isPublicTransport {
-			var members []int64
-			for _, member := range o.Members {
-				members = append(members, member.Ref)
-			}
-			i.stopAreas = append(i.stopAreas, osmStopArea{
-				id:      int(o.ID),
-				members: members,
-			})
-		}
-	}
-}
-
-func (i *countryImporter) saveStations(ctx context.Context) {
-	log.Info("Start saving stations")
-	for _, s := range i.stations {
-		i.osmImporter.repo.DeletePlatformsForStation(ctx, s.id)
-		i.osmImporter.repo.DeleteStopPositionsForStation(ctx, s.id)
-		i.osmImporter.repo.DeleteStation(ctx, s.id)
-
-		_, err := i.osmImporter.repo.CreateStation(ctx, repository.CreateStationParams{
-			ID:             s.id,
-			CountryIsoCode: i.country.IsoCode,
-			Name:           s.name,
-			Lat:            s.lat,
-			Lng:            s.lng,
-			Operator:       s.operator,
-			Wikidata:       s.wikidata,
-			Wikipedia:      s.wikipedia,
-		})
-		if err != nil {
-			log.Errorf("Failed to save station: %+v", err)
-		}
-	}
-
-	for _, sa := range i.stopAreas {
-		var stopAreaStation osmStation
-		var stopAreaPlatforms []osmPlatform
-		var stopAreaStopPositions []osmStopPosition
-		for _, m := range sa.members {
-			s := i.stations[m]
-			if s != (osmStation{}) {
-				stopAreaStation = s
-			}
-			p := i.platforms[m]
-			if p != (osmPlatform{}) {
-				stopAreaPlatforms = append(stopAreaPlatforms, p)
-			}
-			sp := i.stopPositions[m]
-			if sp != (osmStopPosition{}) {
-				stopAreaStopPositions = append(stopAreaStopPositions, sp)
-			}
-		}
-
-		if stopAreaStation == (osmStation{}) {
-			continue
-		}
-
-		i.osmImporter.repo.UpdateStationNumberOfTracks(ctx, repository.UpdateStationNumberOfTracksParams{
-			ID:     stopAreaStation.id,
-			Tracks: int64(len(stopAreaStopPositions)),
+	response, err := http.Get(country.OsmUrl)
+	if err != nil {
+		i.repo.UpdateImportState(ctx, repository.UpdateImportStateParams{
+			ID:              stateId,
+			NumberStations:  0,
+			NumberPlatforms: 0,
+			State:           "failed: Get OSM data",
 		})
 
-		positions := make([][]string, 3)
-		for _, sap := range stopAreaPlatforms {
-			i.osmImporter.repo.CreatePlatform(ctx, repository.CreatePlatformParams{
-				ID:        sap.id,
-				StationID: stopAreaStation.id,
-				Positions: sap.positions,
-			})
-			positions = append(positions, strings.Split(sap.positions, ";"))
-		}
-		for _, sp := range stopAreaStopPositions {
-			neighbors, _ := lo.Find(positions, func(p []string) bool {
-				return lo.Contains(p, sp.position)
-			})
-			i.osmImporter.repo.CreateStopPosition(ctx, repository.CreateStopPositionParams{
-				ID:        sp.id,
-				StationID: stopAreaStation.id,
-				Platform:  sp.position,
-				Lat:       sp.lat,
-				Lng:       sp.lng,
-				Neighbors: strings.Join(neighbors, ";"),
-			})
-		}
+		return err
 	}
+
+	defer response.Body.Close()
+
+	platformNodeParser := newPlatformNodeParser(i.db, ctx, i.repo)
+
+	scanner := osmpbf.New(ctx, response.Body, runtime.GOMAXPROCS(-1))
+	defer scanner.Close()
+
+	for scanner.Scan() {
+		osmObject := scanner.Object()
+		platformNodeParser.parse(osmObject)
+	}
+
+	if err := scanner.Err(); err != nil {
+		i.repo.UpdateImportState(ctx, repository.UpdateImportStateParams{
+			ID:              stateId,
+			NumberStations:  0,
+			NumberPlatforms: 0,
+			State:           "failed: " + err.Error(),
+		})
+		return err
+	}
+
+	log.Info("Calculating center coordinate for platform")
+	err = i.repo.SetPlatformCoordinates(ctx)
+	if err != nil {
+		log.Errorf("Failed to set center for platforms: %+v", err)
+	}
+
+	log.Info("Calculating stations for platforms")
+	for count, err := i.repo.CountPlatformsWithoutStation(ctx); err == nil && count > 0; count, err = i.repo.CountPlatformsWithoutStation(ctx) {
+		log.Infof("Updating station ids for platforms. Left: %d", count)
+		err = i.repo.SetPlatformToNearestStation(ctx)
+	}
+	if err != nil {
+		log.Errorf("Failed to set stations for platforms: %+v", err)
+	}
+
+	log.Info("Setting stop position neighbors")
+	err = i.repo.SetStopPositionNeighbors(ctx)
+	if err != nil {
+		log.Errorf("Failed to set center for platforms: %+v", err)
+	}
+
+	log.Info("Setting number of tracks for stations")
+	err = i.repo.SetStationNumberOfTracks(ctx)
+	if err != nil {
+		log.Errorf("Failed to set number of tracks: %+v", err)
+	}
+
+	i.repo.UpdateImportState(ctx, repository.UpdateImportStateParams{
+		ID:    stateId,
+		State: "Done",
+	})
+
+	return nil
 
 }

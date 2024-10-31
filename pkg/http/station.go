@@ -11,6 +11,7 @@ import (
 	"github.com/amuttsch/bahnglei.se/pkg/tile"
 	"github.com/amuttsch/bahnglei.se/templates/components"
 	"github.com/amuttsch/bahnglei.se/templates/pages"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/sirupsen/logrus"
@@ -48,8 +49,18 @@ func Station(e *echo.Echo, config *config.Config, repo *repository.Queries, tile
 	e.GET("/station/:id", func(c echo.Context) error {
 		id, _ := strconv.Atoi(c.Param("id"))
 		station, _ := repo.GetStation(c.Request().Context(), int64(id))
-		stationStopPositions, _ := repo.GetStopPositionsForStation(c.Request().Context(), int64(id))
-		stationPlatforms, _ := repo.GetPlatformsForStation(c.Request().Context(), int64(id))
+		stationStopPositions, _ := repo.GetStopPositionsForStation(c.Request().Context(),
+			pgtype.Int8{
+				Int64: int64(id),
+				Valid: true,
+			},
+		)
+
+		stationId := pgtype.Int8{
+			Int64: int64(id),
+			Valid: true,
+		}
+		stationPlatforms, _ := repo.GetPlatformsForStation(c.Request().Context(), stationId)
 
 		data := pages.StationPageProps{
 			StationSearchProps: components.StationSearchProps{
@@ -73,8 +84,11 @@ func Station(e *echo.Echo, config *config.Config, repo *repository.Queries, tile
 		platform := c.Param("platform")
 		stationStopPositions, _ := repo.GetStopPositionsForStationAndPlatform(
 			c.Request().Context(), repository.GetStopPositionsForStationAndPlatformParams{
-				StationID: int64(id),
-				Platform:  platform,
+				StationID: pgtype.Int8{
+					Int64: int64(id),
+					Valid: true,
+				},
+				Platform: platform,
 			})
 
 		neighbors := strings.Split(stationStopPositions.Neighbors, ";")
@@ -108,7 +122,7 @@ func Station(e *echo.Echo, config *config.Config, repo *repository.Queries, tile
 			return c.NoContent(404)
 		}
 
-		image, err := tileService.Tile(c.Request().Context(), int64(x), int64(y), int64(z), station.Lat, station.Lng)
+		image, err := tileService.Tile(c.Request().Context(), int64(x), int64(y), int64(z), station.Coordinate.P.Y, station.Coordinate.P.X)
 		if err != nil {
 			logrus.Error(err)
 			return c.NoContent(404)

@@ -38,11 +38,16 @@ templ StationPage(props StationPageProps) {
       var map = L.map('map', {
           attribution: false
         });
-      map.setView([station.Lat, station.Lng], 17);
+
+      const parseCoordinate = (coordinate) => coordinate.slice(1, -1).split(",").reverse();
+
+      const [lat, lng] = parseCoordinate(station.Coordinate);
+      map.setView([lat, lng], 17);
 
       stopPosition?.forEach(stopPosition => {
         const platform = stopPosition.Platform.replace(' ', '-');
-        L.marker([stopPosition.Lat, stopPosition.Lng], {
+        const [lat, lng] = parseCoordinate(stopPosition.Coordinate);
+        L.marker([lat, lng], {
             riseOnHover: true,
             icon: L.divIcon({
               className: "dummy",

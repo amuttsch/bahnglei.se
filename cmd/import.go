@@ -44,7 +44,7 @@ var importCmd = &cobra.Command{
 
 		repo := repository.New(dbPool)
 
-		osmImporter := osmimporter.New(conf, repo)
+		osmImporter := osmimporter.New(conf, repo, dbPool)
 		osmImporter.Import(context)
 
 		log.Infoln("Finished importing OSM data")

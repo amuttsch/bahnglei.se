@@ -13,6 +13,8 @@ import (
 	"golang.org/x/text/message"
 )
 
+const NODE_BUFFER_SIZE = 10_000
+
 type platformNodeParser struct {
 	db             *pgxpool.Pool
 	ctx            context.Context
@@ -31,16 +33,16 @@ func newPlatformNodeParser(db *pgxpool.Pool, ctx context.Context, repo *reposito
 		db,
 		ctx,
 		repo,
-		make([]repository.InsertTemporaryNodesParams, 0, 100000),
+		make([]repository.InsertTemporaryNodesParams, 0, NODE_BUFFER_SIZE),
 		0,
 	}
 }
 
-func (p *platformNodeParser) parse(object osm.Object) {
+func (p *platformNodeParser) parse(object osm.Object, countryIso string) {
 	switch o := object.(type) {
 	case *osm.Node:
 		if len(p.nodeBuffer) == cap(p.nodeBuffer) {
-			p.saveNodeBuffer()
+			p.saveNodeBuffer(countryIso)
 		}
 
 		p.nodeBuffer = append(p.nodeBuffer, repository.InsertTemporaryNodesParams{
@@ -61,7 +63,7 @@ func (p *platformNodeParser) parse(object osm.Object) {
 	}
 }
 
-func (p *platformNodeParser) saveNodeBuffer() {
+func (p *platformNodeParser) saveNodeBuffer(countryIso string) {
 	tx, err := p.db.BeginTx(p.ctx, pgx.TxOptions{})
 	txRepo := p.repo.WithTx(tx)
 	if err != nil {
@@ -80,9 +82,10 @@ func (p *platformNodeParser) saveNodeBuffer() {
 
 	printer := message.NewPrinter(language.English)
 	logrus.Infof(
-		"Saving and merging %d / %d nodes. Total nodes processed: %s",
+		"Saving and merging %d / %d nodes for country %s. Total nodes processed: %s",
 		len(ids),
 		cap(p.nodeBuffer),
+		countryIso,
 		printer.Sprint(p.processedNodes),
 	)
 	p.nodeBuffer = p.nodeBuffer[:0]

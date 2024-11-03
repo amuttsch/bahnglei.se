@@ -147,7 +147,7 @@ func (i *osmImporter) importSecondPass(ctx context.Context, country repository.C
 
 	for scanner.Scan() {
 		osmObject := scanner.Object()
-		platformNodeParser.parse(osmObject)
+		platformNodeParser.parse(osmObject, country.IsoCode)
 	}
 
 	if err := scanner.Err(); err != nil {

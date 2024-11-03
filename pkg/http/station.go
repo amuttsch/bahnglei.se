@@ -37,6 +37,7 @@ func Station(e *echo.Echo, config *config.Config, repo *repository.Queries, tile
 				ID:         strconv.Itoa(int(station.ID)),
 				Name:       station.Name,
 				CountryIso: station.CountryIsoCode,
+				NumTracks:  strconv.FormatInt(station.Tracks, 10),
 			}
 		}
 		data := components.StationSearchProps{

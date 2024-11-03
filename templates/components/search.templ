@@ -8,6 +8,7 @@ type StationSearchElement struct {
 	ID         string
 	Name       string
 	CountryIso string
+	NumTracks  string
 }
 
 type StationSearchProps struct {
@@ -73,11 +74,14 @@ templ StationSearchResultList(stationList StationSearchProps) {
 }
 
 templ StationSearchResultListItem(item StationSearchElement) {
-	<li class="p-4 text-gray-700">
-		<div class="flex flex-row space-x-2 items-center">
+	<li class="p-3 text-gray-700">
+		<a href={ templ.SafeURL(getStationUrl(item.ID)) } class="flex flex-row space-x-3 items-center">
 			<img class="w-6" src={ getFlagUrl(item.CountryIso) }/>
-			<a href={ templ.SafeURL(getStationUrl(item.ID)) }>{ item.Name }</a>
-		</div>
+			<div class="flex flex-col items-start">
+				<span>{ item.Name }</span>
+				<span class="text-xs text-gray-500">Tracks: { item.NumTracks }</span>
+			</div>
+		</a>
 	</li>
 }
 

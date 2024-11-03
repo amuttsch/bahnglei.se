@@ -1,5 +1,5 @@
 -- name: CreatePlatformNode :exec
-insert into platform_nodes (id, platform_id) values ($1, $2) on conflict (id) do nothing;
+insert into platform_nodes (id, platform_id, country_iso_code) values ($1, $2, $3) on conflict (id) do nothing;
 
 -- name: GetPlatformNode :one
 select * from platform_nodes where id = $1;

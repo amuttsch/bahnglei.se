@@ -90,9 +90,9 @@ func (i *osmImporter) importFirstPass(ctx context.Context, country repository.Co
 
 	for scanner.Scan() {
 		osmObject := scanner.Object()
-		platformParser.parse(osmObject)
+		platformParser.parse(country.IsoCode, osmObject)
 		stationParser.parse(osmObject)
-		stopPositionParser.parse(osmObject)
+		stopPositionParser.parse(country.IsoCode, osmObject)
 	}
 
 	log.Infof("Got %d stations", stationParser.numElements)
@@ -111,10 +111,7 @@ func (i *osmImporter) importFirstPass(ctx context.Context, country repository.Co
 	}
 
 	log.Info("Calculating stations for stop positions")
-	for count, err := i.repo.CountStopPositionsWithoutStation(ctx); err == nil && count > 0; count, err = i.repo.CountStopPositionsWithoutStation(ctx) {
-		log.Infof("Updating 100 station ids for stop position. Left: %d", count)
-		i.repo.SetStopPositionStationIdToNearestStation(ctx)
-	}
+	i.repo.SetStopPositionStationIdToNearestStation(ctx, country.IsoCode)
 
 	i.repo.UpdateImportState(ctx, repository.UpdateImportStateParams{
 		ID:              stateId,
@@ -164,28 +161,25 @@ func (i *osmImporter) importSecondPass(ctx context.Context, country repository.C
 	}
 
 	log.Info("Calculating center coordinate for platform")
-	err = i.repo.SetPlatformCoordinates(ctx)
+	err = i.repo.SetPlatformCoordinates(ctx, country.IsoCode)
 	if err != nil {
 		log.Errorf("Failed to set center for platforms: %+v", err)
 	}
 
 	log.Info("Calculating stations for platforms")
-	for count, err := i.repo.CountPlatformsWithoutStation(ctx); err == nil && count > 0; count, err = i.repo.CountPlatformsWithoutStation(ctx) {
-		log.Infof("Updating station ids for platforms. Left: %d", count)
-		err = i.repo.SetPlatformToNearestStation(ctx)
-	}
+	err = i.repo.SetPlatformToNearestStation(ctx, country.IsoCode)
 	if err != nil {
 		log.Errorf("Failed to set stations for platforms: %+v", err)
 	}
 
 	log.Info("Setting stop position neighbors")
-	err = i.repo.SetStopPositionNeighbors(ctx)
+	err = i.repo.SetStopPositionNeighbors(ctx, country.IsoCode)
 	if err != nil {
 		log.Errorf("Failed to set center for platforms: %+v", err)
 	}
 
 	log.Info("Setting number of tracks for stations")
-	err = i.repo.SetStationNumberOfTracks(ctx)
+	err = i.repo.SetStationNumberOfTracks(ctx, country.IsoCode)
 	if err != nil {
 		log.Errorf("Failed to set number of tracks: %+v", err)
 	}

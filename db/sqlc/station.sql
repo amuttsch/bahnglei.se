@@ -26,7 +26,10 @@ select * from stations where name ILIKE $1 order by tracks desc limit 20;
 
 -- name: SetStationNumberOfTracks :exec
 with cte as(
-	select station_id, count(*) num_tracks from stop_positions group by station_id
+	select station_id, count(*) num_tracks 
+  from stop_positions sp
+  where sp.country_iso_code = $1
+  group by station_id
 )
 update stations set tracks = cte.num_tracks
 from cte

@@ -1,5 +1,5 @@
 -- name: CreateTemporaryNodeTable :exec
-CREATE TEMPORARY TABLE tmp_nodes(
+CREATE TEMPORARY TABLE IF NOT EXISTS tmp_nodes(
   id bigint primary key,
   coordinate point
 ) ON COMMIT DELETE ROWS;

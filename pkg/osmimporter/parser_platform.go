@@ -25,7 +25,7 @@ func newPlatformParser(db *pgxpool.Pool, ctx context.Context, repo *repository.Q
 	}
 }
 
-func (p *platformParser) parse(object osm.Object) {
+func (p *platformParser) parse(countryIso string, object osm.Object) {
 	switch o := object.(type) {
 	case *osm.Node:
 
@@ -36,8 +36,9 @@ func (p *platformParser) parse(object osm.Object) {
 
 		if isTrain && isPlatform {
 			_, err := p.repo.CreatePlatform(p.ctx, repository.CreatePlatformParams{
-				ID:        int64(o.ID),
-				Positions: ref,
+				ID:             int64(o.ID),
+				Positions:      ref,
+				CountryIsoCode: countryIso,
 			})
 			if err != nil {
 				logrus.Errorf("Failed to save platform: %+v\n", err)
@@ -48,8 +49,9 @@ func (p *platformParser) parse(object osm.Object) {
 
 			for _, node := range o.Nodes.NodeIDs() {
 				err = p.repo.CreatePlatformNode(p.ctx, repository.CreatePlatformNodeParams{
-					ID:         int64(node),
-					PlatformID: int64(o.ID),
+					ID:             int64(node),
+					PlatformID:     int64(o.ID),
+					CountryIsoCode: countryIso,
 				})
 				if err != nil {
 					logrus.Errorf("Failed to save platform node: %+v\n", err)

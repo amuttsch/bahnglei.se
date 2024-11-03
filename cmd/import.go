@@ -37,10 +37,13 @@ var importCmd = &cobra.Command{
 			"file://db/migrations",
 			conf.DatabaseUrl)
 		if err != nil {
+			log.Errorf("Unable to create migration: %v\n", err)
+			os.Exit(1)
+		}
+		if err := m.Up(); err != migrate.ErrNoChange {
 			log.Errorf("Unable to run migrations: %v\n", err)
 			os.Exit(1)
 		}
-		m.Up()
 
 		repo := repository.New(dbPool)
 

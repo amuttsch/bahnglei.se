@@ -26,7 +26,7 @@ func newStopPositionParser(db *pgxpool.Pool, ctx context.Context, repo *reposito
 	}
 }
 
-func (p *stopPositionParser) parse(object osm.Object) {
+func (p *stopPositionParser) parse(countryIso string, object osm.Object) {
 	switch o := object.(type) {
 	case *osm.Node:
 		isStopPosition := o.Tags.Find("public_transport") == "stop_position"
@@ -55,6 +55,7 @@ func (p *stopPositionParser) parse(object osm.Object) {
 					},
 					Valid: true,
 				},
+				CountryIsoCode: countryIso,
 			})
 
 			if err != nil {

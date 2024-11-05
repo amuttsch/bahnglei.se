@@ -76,7 +76,11 @@ templ StationPage(props StationPageProps) {
         position: 'topright'
       }).addTo(map);
 
-      L.tileLayer(`/station/${station.ID}/tile/{z}/{x}/{y}.png`).addTo(map);
+      L.tileLayer(
+        `/station/${station.ID}/tile/{z}/{x}/{y}.png`,
+        {
+          maxZoom: 22,
+        }).addTo(map);
   </script>
 	}
 }

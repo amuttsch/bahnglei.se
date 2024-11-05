@@ -47,7 +47,7 @@ func (ts *tileService) Tile(ctx context.Context, x, y, z int64, targetLat, targe
 		return osmTile.Data, nil
 	}
 
-	osmLink := fmt.Sprintf("https://tile.thunderforest.com/transport/%d/%d/%d.png?apikey=%s", z, x, y, ts.tileForstApiKey)
+	osmLink := fmt.Sprintf("https://tile.thunderforest.com/transport/%d/%d/%d@2x.png?apikey=%s", z, x, y, ts.tileForstApiKey)
 	resp, err := http.Get(osmLink)
 	if err != nil {
 		return nil, err

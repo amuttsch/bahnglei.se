@@ -254,7 +254,7 @@ func (i *osmImporter) importPlatformWays(ctx context.Context, country repository
 
 func (i *osmImporter) importPlatformNodes(ctx context.Context, country repository.Country, stateId int32) error {
 	log.Info("Importing platform nodes")
-	response, err := http.Get(country.OsmUrl)
+	osmFile, err := os.Open(country.OsmUrl)
 	if err != nil {
 		i.repo.UpdateImportState(ctx, repository.UpdateImportStateParams{
 			ID:              stateId,
@@ -266,11 +266,11 @@ func (i *osmImporter) importPlatformNodes(ctx context.Context, country repositor
 		return err
 	}
 
-	defer response.Body.Close()
+	defer osmFile.Close()
 
 	platformNodeParser := newPlatformNodeParser(i.db, ctx, i.repo)
 
-	scanner := osmpbf.New(ctx, response.Body, runtime.GOMAXPROCS(-1))
+	scanner := osmpbf.New(ctx, osmFile, runtime.GOMAXPROCS(-1))
 	defer scanner.Close()
 
 	for scanner.Scan() {

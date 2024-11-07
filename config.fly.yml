@@ -1,4 +1,5 @@
 databaseUrl: postgres://postgres:postgres@localhost:5432/bahngleise?sslmode=disable
+tempOsmDir: /osm
 countries:
   - iso: CH
     name: Switzerland

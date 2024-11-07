@@ -30,7 +30,7 @@ WHERE u.id = sp.id and sp.id IN (SELECT id
 -- name: SetStopPositionNeighbors :exec
 with cte as (
 	select sp.*, string_agg(p.positions, ';') n from stop_positions sp
-	inner join platforms p on sp.station_id = p.station_id and p.positions like '%' || sp.platform || '%'
+	inner join platforms p on sp.station_id = p.station_id and sp.platform = ANY(STRING_TO_ARRAY(p.positions, ';'))
   where sp.country_iso_code = $1
 	group by sp.id
 )

@@ -55,6 +55,14 @@ CREATE TABLE platform_nodes (
   CONSTRAINT fk_country FOREIGN KEY (country_iso_code) REFERENCES countries (iso_code) MATCH SIMPLE ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 
+CREATE TABLE platform_ways (
+  id bigint primary key,
+  platform_id bigint not null,
+  country_iso_code text not null,
+  CONSTRAINT fk_platforms FOREIGN KEY (platform_id) REFERENCES platforms (id) MATCH SIMPLE ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT fk_country FOREIGN KEY (country_iso_code) REFERENCES countries (iso_code) MATCH SIMPLE ON UPDATE NO ACTION ON DELETE NO ACTION
+);
+
 CREATE TABLE IF NOT EXISTS stop_positions (
   id bigint PRIMARY KEY,
   station_id bigint,
@@ -100,4 +108,6 @@ CREATE TABLE IF NOT EXISTS import_state (
     CONSTRAINT fk_import_state_country FOREIGN KEY (country_iso_code) REFERENCES countries (iso_code) MATCH SIMPLE ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 
-CREATE TEMPORARY TABLE tmp_nodes (id bigint primary key, coordinate point) ON COMMIT DELETE ROWS;
+CREATE TEMPORARY TABLE IF NOT EXISTS tmp_nodes (id bigint primary key, coordinate point) ON COMMIT DELETE ROWS;
+
+CREATE TEMPORARY TABLE IF NOT EXISTS tmp_ways (id bigint not null, node bigint not null) ON COMMIT DELETE ROWS;

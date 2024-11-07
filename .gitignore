@@ -34,3 +34,6 @@ pkg/repository
 
 assets/css/style.css
 
+# OSM dev files
+osm/
+osm_tmp/

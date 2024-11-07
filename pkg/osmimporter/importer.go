@@ -3,8 +3,12 @@ package osmimporter
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/amuttsch/bahnglei.se/pkg/config"
 	"github.com/amuttsch/bahnglei.se/pkg/repository"
@@ -35,9 +39,26 @@ func New(config *config.Config, repo *repository.Queries, db *pgxpool.Pool) *osm
 
 func (i *osmImporter) Import(ctx context.Context) {
 	for _, c := range i.config.Countries {
+		if err := i.cleanOsmDir(ctx); err != nil {
+			log.Errorf("Failed to cleanup temp dir %s: %+v", i.config.TempOsmDir, err)
+			return
+		}
+
+		state, err := i.repo.CreateImportState(ctx, c.Iso)
+		if err != nil {
+			log.Errorf("Failed to import country %s: %+v", c.Name, err)
+			return
+		}
+
+		osmFilePath, err := i.fetchOsmFile(ctx, c.Url, state.ID)
+		if err != nil {
+			log.Errorf("Failed to fetch osm file %+v", err)
+			return
+		}
+
 		country, err := i.repo.SaveCountry(ctx, repository.SaveCountryParams{
 			IsoCode: c.Iso,
-			OsmUrl:  c.Url,
+			OsmUrl:  osmFilePath,
 			Name:    c.Name,
 		})
 		if err != nil {
@@ -45,28 +66,104 @@ func (i *osmImporter) Import(ctx context.Context) {
 			return
 		}
 
-		state, err := i.repo.CreateImportState(ctx, country.IsoCode)
-		if err != nil {
-			log.Errorf("Failed to import country %s: %+v", country.Name, err)
-			return
-		}
 		err = i.importFirstPass(ctx, country, state.ID)
 		if err != nil {
 			log.Errorf("Failed to import country %s: %+v", country.Name, err)
 			return
 		}
-		err = i.importSecondPass(ctx, country, state.ID)
+
+		err = i.importPlatformWays(ctx, country, state.ID)
 		if err != nil {
-			log.Errorf("Failed to import country %s: %+v", country.Name, err)
+			log.Errorf("Failed to import platform ways %s: %+v", country.Name, err)
+			return
+		}
+
+		err = i.importPlatformNodes(ctx, country, state.ID)
+		if err != nil {
+			log.Errorf("Failed to import platform nodes %s: %+v", country.Name, err)
+			return
+		}
+
+		err = i.calculateDistances(ctx, country, state.ID)
+		if err != nil {
+			log.Errorf("Failed to calculate distances for: %s: %+v", country.Name, err)
 			return
 		}
 	}
 }
 
+func (i *osmImporter) cleanOsmDir(ctx context.Context) error {
+	osmDir, err := filepath.Abs(i.config.TempOsmDir)
+	if err != nil {
+		return fmt.Errorf("Failed to get absolute file path for temp dir %s: %w", i.config.TempOsmDir, err)
+	}
+
+	osmDirGlob := filepath.Join(osmDir, "*")
+	files, err := filepath.Glob(osmDirGlob)
+	if err != nil {
+		return fmt.Errorf("Failed to get glob dir %s: %w", osmDirGlob, err)
+	}
+
+	for _, f := range files {
+		fileInfo, err := os.Stat(f)
+		if err != nil {
+			return err
+		}
+		if !fileInfo.IsDir() {
+
+			if err := os.Remove(f); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (i *osmImporter) fetchOsmFile(ctx context.Context, url string, stateId int32) (string, error) {
+	log.Infof("Fetching OSM file from %s", url)
+
+	osmFilename := url[strings.LastIndex(url, "/")+1:]
+	osmDir, err := filepath.Abs(i.config.TempOsmDir)
+	if err != nil {
+		return "", fmt.Errorf("Failed to get absolute file path for temp dir %s: %w", i.config.TempOsmDir, err)
+	}
+
+	osmFilePath := filepath.Join(osmDir, osmFilename)
+	osmFile, err := os.Create(osmFilePath)
+	if err != nil {
+		return "", fmt.Errorf("Failed to open file %s: %w", osmFilePath, err)
+	}
+
+	defer osmFile.Close()
+
+	response, err := http.Get(url)
+	if err != nil {
+		i.repo.UpdateImportState(ctx, repository.UpdateImportStateParams{
+			ID:              stateId,
+			NumberStations:  0,
+			NumberPlatforms: 0,
+			State:           "failed: Get OSM data",
+		})
+
+		return "", err
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("bad status: %s", response.Status)
+	}
+
+	defer response.Body.Close()
+
+	n, err := io.Copy(osmFile, response.Body)
+	log.Infof("Fetched %d bytes: %+v", n, err)
+
+	return osmFilePath, err
+}
+
 func (i *osmImporter) importFirstPass(ctx context.Context, country repository.Country, stateId int32) error {
 	log.Infof("Importing country %s from %s", country.IsoCode, country.OsmUrl)
 
-	response, err := http.Get(country.OsmUrl)
+	osmFile, err := os.Open(country.OsmUrl)
 	if err != nil {
 		fmt.Println(err)
 		i.repo.UpdateImportState(ctx, repository.UpdateImportStateParams{
@@ -79,13 +176,13 @@ func (i *osmImporter) importFirstPass(ctx context.Context, country repository.Co
 		return err
 	}
 
-	defer response.Body.Close()
+	defer osmFile.Close()
 
 	platformParser := newPlatformParser(i.db, ctx, i.repo)
 	stationParser := newStationParser(i.db, ctx, i.repo, country.IsoCode)
 	stopPositionParser := newStopPositionParser(i.db, ctx, i.repo)
 
-	scanner := osmpbf.New(ctx, response.Body, runtime.GOMAXPROCS(-1))
+	scanner := osmpbf.New(ctx, osmFile, runtime.GOMAXPROCS(-1))
 	defer scanner.Close()
 
 	for scanner.Scan() {
@@ -124,8 +221,46 @@ func (i *osmImporter) importFirstPass(ctx context.Context, country repository.Co
 
 }
 
-func (i *osmImporter) importSecondPass(ctx context.Context, country repository.Country, stateId int32) error {
+func (i *osmImporter) importPlatformWays(ctx context.Context, country repository.Country, stateId int32) error {
+	log.Info("Importing platform ways")
+	osmFile, err := os.Open(country.OsmUrl)
+	if err != nil {
+		i.repo.UpdateImportState(ctx, repository.UpdateImportStateParams{
+			ID:              stateId,
+			NumberStations:  0,
+			NumberPlatforms: 0,
+			State:           "failed: Get OSM data",
+		})
 
+		return err
+	}
+
+	defer osmFile.Close()
+
+	platformWayParser := newPlatformWayParser(i.db, ctx, i.repo)
+
+	scanner := osmpbf.New(ctx, osmFile, runtime.GOMAXPROCS(-1))
+	defer scanner.Close()
+
+	for scanner.Scan() {
+		osmObject := scanner.Object()
+		platformWayParser.parse(osmObject, country.IsoCode)
+	}
+
+	if err := scanner.Err(); err != nil {
+		i.repo.UpdateImportState(ctx, repository.UpdateImportStateParams{
+			ID:              stateId,
+			NumberStations:  0,
+			NumberPlatforms: 0,
+			State:           "failed: " + err.Error(),
+		})
+		return err
+	}
+	return nil
+}
+
+func (i *osmImporter) importPlatformNodes(ctx context.Context, country repository.Country, stateId int32) error {
+	log.Info("Importing platform nodes")
 	response, err := http.Get(country.OsmUrl)
 	if err != nil {
 		i.repo.UpdateImportState(ctx, repository.UpdateImportStateParams{
@@ -150,6 +285,8 @@ func (i *osmImporter) importSecondPass(ctx context.Context, country repository.C
 		platformNodeParser.parse(osmObject, country.IsoCode)
 	}
 
+	platformNodeParser.saveNodeBuffer(country.IsoCode)
+
 	if err := scanner.Err(); err != nil {
 		i.repo.UpdateImportState(ctx, repository.UpdateImportStateParams{
 			ID:              stateId,
@@ -159,9 +296,12 @@ func (i *osmImporter) importSecondPass(ctx context.Context, country repository.C
 		})
 		return err
 	}
+	return nil
+}
 
+func (i *osmImporter) calculateDistances(ctx context.Context, country repository.Country, stateId int32) error {
 	log.Info("Calculating center coordinate for platform")
-	err = i.repo.SetPlatformCoordinates(ctx, country.IsoCode)
+	err := i.repo.SetPlatformCoordinates(ctx, country.IsoCode)
 	if err != nil {
 		log.Errorf("Failed to set center for platforms: %+v", err)
 	}

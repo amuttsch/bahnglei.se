@@ -20,6 +20,7 @@ type ThunderforestConfig struct {
 
 type Config struct {
 	DatabaseUrl         string
+	TempOsmDir          string
 	Countries           []CountryConfig
 	ThunderforestConfig ThunderforestConfig
 }

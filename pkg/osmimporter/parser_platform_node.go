@@ -13,7 +13,7 @@ import (
 	"golang.org/x/text/message"
 )
 
-const NODE_BUFFER_SIZE = 10_000
+const NODE_BUFFER_SIZE = 1_000_000
 
 type platformNodeParser struct {
 	db             *pgxpool.Pool

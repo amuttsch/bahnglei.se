@@ -61,5 +61,45 @@ func (p *platformParser) parse(countryIso string, object osm.Object) {
 		}
 
 	case *osm.Relation:
+		isTrain := o.Tags.Find("train") == "yes"
+		ref := o.Tags.Find("ref")
+		isPlatform := o.Tags.Find("public_transport") == "platform" || o.Tags.Find("railway") == "platform"
+
+		if isTrain && isPlatform {
+			_, err := p.repo.CreatePlatform(p.ctx, repository.CreatePlatformParams{
+				ID:             int64(o.ID),
+				Positions:      ref,
+				CountryIsoCode: countryIso,
+			})
+			if err != nil {
+				logrus.Errorf("Failed to save platform: %+v\n", err)
+				break
+			}
+
+			p.numElements = p.numElements + 1
+
+			for _, member := range o.Members {
+				switch member.Type {
+				case osm.TypeNode:
+					err = p.repo.CreatePlatformNode(p.ctx, repository.CreatePlatformNodeParams{
+						ID:             int64(member.ElementID()),
+						PlatformID:     int64(o.ID),
+						CountryIsoCode: countryIso,
+					})
+					if err != nil {
+						logrus.Errorf("Failed to save platform node: %+v\n", err)
+					}
+				case osm.TypeWay:
+					err = p.repo.CreatePlatformWay(p.ctx, repository.CreatePlatformWayParams{
+						ID:             member.Ref,
+						PlatformID:     int64(o.ID),
+						CountryIsoCode: countryIso,
+					})
+					if err != nil {
+						logrus.Errorf("Failed to save platform way: %+v\n", err)
+					}
+				}
+			}
+		}
 	}
 }

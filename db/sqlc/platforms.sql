@@ -28,9 +28,8 @@ where u.id = cte.platform_id;
 update platforms u set station_id = s.id
 from platforms p
 left join lateral (
-	select * from stations s order by s.coordinate <-> p.coordinate limit 1
+  select * from stations s where s.country_iso_code = $1 order by s.coordinate <-> p.coordinate limit 1
 ) s on TRUE
 WHERE u.id = p.id and p.id IN (SELECT id
              FROM platforms inner_platform
-             WHERE station_id is null
-             and inner_platform.country_iso_code = $1);
+             WHERE inner_platform.country_iso_code = $1);

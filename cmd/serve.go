@@ -45,7 +45,7 @@ var serveCmd = &cobra.Command{
 			log.Errorf("Unable to create migration: %v\n", err)
 			os.Exit(1)
 		}
-		if err := m.Up(); err != migrate.ErrNoChange {
+		if err := m.Up(); err != nil && err != migrate.ErrNoChange {
 			log.Errorf("Unable to run migrations: %v\n", err)
 			os.Exit(1)
 		}

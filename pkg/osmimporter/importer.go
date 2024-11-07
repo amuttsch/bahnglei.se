@@ -44,13 +44,7 @@ func (i *osmImporter) Import(ctx context.Context) {
 			return
 		}
 
-		state, err := i.repo.CreateImportState(ctx, c.Iso)
-		if err != nil {
-			log.Errorf("Failed to import country %s: %+v", c.Name, err)
-			return
-		}
-
-		osmFilePath, err := i.fetchOsmFile(ctx, c.Url, state.ID)
+		osmFilePath, err := i.fetchOsmFile(c.Url)
 		if err != nil {
 			log.Errorf("Failed to fetch osm file %+v", err)
 			return
@@ -63,6 +57,12 @@ func (i *osmImporter) Import(ctx context.Context) {
 		})
 		if err != nil {
 			log.Errorf("Failed to create country %s: %+v", c.Name, err)
+			return
+		}
+
+		state, err := i.repo.CreateImportState(ctx, c.Iso)
+		if err != nil {
+			log.Errorf("Failed to import country %s: %+v", c.Name, err)
 			return
 		}
 
@@ -119,7 +119,7 @@ func (i *osmImporter) cleanOsmDir(ctx context.Context) error {
 	return nil
 }
 
-func (i *osmImporter) fetchOsmFile(ctx context.Context, url string, stateId int32) (string, error) {
+func (i *osmImporter) fetchOsmFile(url string) (string, error) {
 	log.Infof("Fetching OSM file from %s", url)
 
 	osmFilename := url[strings.LastIndex(url, "/")+1:]
@@ -138,13 +138,6 @@ func (i *osmImporter) fetchOsmFile(ctx context.Context, url string, stateId int3
 
 	response, err := http.Get(url)
 	if err != nil {
-		i.repo.UpdateImportState(ctx, repository.UpdateImportStateParams{
-			ID:              stateId,
-			NumberStations:  0,
-			NumberPlatforms: 0,
-			State:           "failed: Get OSM data",
-		})
-
 		return "", err
 	}
 

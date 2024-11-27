@@ -34,7 +34,6 @@ func (o *Overpass) fetchStopAreas(area string, countryIso string) error {
 	for _, stopArea := range resp.Elements {
 		stationId, err := o.findStationInStopArea(stopArea)
 		if err != nil {
-			logrus.Infof("No station found for stop area: %v", stopArea)
 			continue
 		}
 

@@ -9,7 +9,7 @@ import (
 )
 
 const fetchRoutesQuery = `
-[out:json];
+[out:json][timeout:3600];
 area[name="%s"];
 (
   node
@@ -25,8 +25,6 @@ area[name="%s"];
     out tags;
   );
 );
-
-out;
 `
 
 func (o *Overpass) fetchRoutes(area string) error {

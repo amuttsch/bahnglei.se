@@ -5,4 +5,4 @@ insert into routes (route_id, stop_position_id, from_station, to_station, via, r
   returning *;
  
 -- name: FindRoutesForStopPosition :many
-select * from routes where stop_position_id = $1;
+select * from routes where stop_position_id = $1 order by name;

@@ -10,6 +10,7 @@ import (
 
 	"github.com/amuttsch/bahnglei.se/pkg/repository"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/sirupsen/logrus"
 )
 
 type ElementType string
@@ -27,6 +28,7 @@ type overpassResponse struct {
 		Copyright          string    `json:"copyright"`
 	} `json:"osm3s"`
 	Elements []overpassResponseElement `json:"elements"`
+	Remark   string                    `json:"remark"`
 }
 
 type overpassResponseElement struct {
@@ -90,6 +92,10 @@ func (o *Overpass) fetch(query string) (*overpassResponse, error) {
 	var overpassResp overpassResponse
 	if err := json.NewDecoder(resp.Body).Decode(&overpassResp); err != nil {
 		return nil, fmt.Errorf("overpass engine error: %w", err)
+	}
+
+	if overpassResp.Remark != "" {
+		logrus.Warnf("Got remark from API: %s", resp.Remark)
 	}
 
 	return &overpassResp, nil

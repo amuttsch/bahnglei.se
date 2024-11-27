@@ -19,7 +19,7 @@ out;
 `
 
 func (o *Overpass) fetchStopPositions(area string, countryIso string) error {
-	logrus.Infof("Fetching stop positions ")
+	logrus.Infof("Fetching stop positions")
 	resp, err := o.fetch(fmt.Sprintf(fetchStopPositionsQuery, area))
 	if err != nil {
 		return err

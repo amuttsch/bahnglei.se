@@ -79,7 +79,8 @@ CREATE TABLE IF NOT EXISTS routes (
     updated_at timestamp
   with
     time zone not null default current_timestamp,
-    CONSTRAINT fk_stop_position FOREIGN KEY (stop_position_id) REFERENCES stop_positions (id) MATCH SIMPLE ON UPDATE NO ACTION ON DELETE NO ACTION
+    CONSTRAINT fk_stop_position FOREIGN KEY (stop_position_id) REFERENCES stop_positions (id) MATCH SIMPLE ON UPDATE NO ACTION ON DELETE NO ACTION,
+    UNIQUE (route_id, stop_position_id)
 );
 
 CREATE TABLE IF NOT EXISTS osm_tiles (

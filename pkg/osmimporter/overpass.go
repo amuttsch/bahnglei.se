@@ -95,7 +95,7 @@ func (o *Overpass) fetch(query string) (*overpassResponse, error) {
 	}
 
 	if overpassResp.Remark != "" {
-		logrus.Warnf("Got remark from API: %s", resp.Remark)
+		logrus.Warnf("Got remark from API: %s", overpassResp.Remark)
 	}
 
 	return &overpassResp, nil

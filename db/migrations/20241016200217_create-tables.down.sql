@@ -1,10 +1,8 @@
 DROP TABLE osm_tiles;
 
+DROP TABLE routes;
+
 DROP TABLE stop_positions;
-
-DROP TABLE platform_nodes;
-
-DROP TABLE platform_ways;
 
 DROP TABLE platforms;
 

@@ -30,10 +30,11 @@ func Run(ctx context.Context, config *config.Config, repo *repository.Queries, d
 			return err
 		}
 
-		//overpass.fetchStations(c.Area, c.Iso)
-		// overpass.fetchStopPositions(c.Area, c.Iso)
-		//overpass.fetchPlatforms(c.Area, c.Iso)
+		overpass.fetchStations(c.Area, c.Iso)
+		overpass.fetchStopPositions(c.Area, c.Iso)
+		overpass.fetchPlatforms(c.Area, c.Iso)
 		overpass.fetchStopAreas(c.Area, c.Iso)
+		overpass.fetchRoutes(c.Area)
 
 		calculateDistances(ctx, repo, country)
 	}

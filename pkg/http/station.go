@@ -93,7 +93,9 @@ func Station(e *echo.Echo, config *config.Config, repo *repository.Queries, tile
 			return n == platform || n == ""
 		})
 
-		trackDetails := pages.TrackDetails(platform, neighbors)
+		routes, _ := repo.FindRoutesForStopPosition(c.Request().Context(), stationStopPositions.ID)
+
+		trackDetails := pages.TrackDetails(platform, neighbors, routes)
 		return trackDetails.Render(c.Request().Context(), c.Response().Writer)
 	})
 

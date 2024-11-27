@@ -85,7 +85,7 @@ templ StationPage(props StationPageProps) {
 	}
 }
 
-templ TrackDetails(plaform string, neighbors []string) {
+templ TrackDetails(plaform string, neighbors []string, routes []repository.Route) {
 	<div class="flex flex-col space-y-2">
 		<span class="text-md font-bold">
 			Platform <strong>{ plaform }</strong>
@@ -106,6 +106,16 @@ templ TrackDetails(plaform string, neighbors []string) {
 				}
 			}
 		</div>
+		<span class="text-sm">
+			Scheduled routes:
+			<div class="flex flex-col space-y-2">
+				for _, route := range routes {
+					<div class="rounded px-2 font-bold bg-[#1455C0] text-white text-sm">
+						{ route.Name.String }
+					</div>
+				}
+			</div>
+		</span>
 		@Attribution()
 	</div>
 }

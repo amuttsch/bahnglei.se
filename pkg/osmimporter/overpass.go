@@ -30,16 +30,16 @@ type overpassResponse struct {
 }
 
 type overpassResponseElement struct {
-	Type      string     `json:"type"`
-	ID        int64      `json:"id"`
-	Lat       float64    `json:"lat"`
-	Lon       float64    `json:"lon"`
-	Timestamp *time.Time `json:"timestamp"`
-	Version   int64      `json:"version"`
-	Changeset int64      `json:"changeset"`
-	User      string     `json:"user"`
-	UID       int64      `json:"uid"`
-	Nodes     []int64    `json:"nodes"`
+	Type      ElementType `json:"type"`
+	ID        int64       `json:"id"`
+	Lat       float64     `json:"lat"`
+	Lon       float64     `json:"lon"`
+	Timestamp *time.Time  `json:"timestamp"`
+	Version   int64       `json:"version"`
+	Changeset int64       `json:"changeset"`
+	User      string      `json:"user"`
+	UID       int64       `json:"uid"`
+	Nodes     []int64     `json:"nodes"`
 	Members   []struct {
 		Type ElementType `json:"type"`
 		Ref  int64       `json:"ref"`

@@ -6,10 +6,8 @@ import (
 	"github.com/amuttsch/bahnglei.se/pkg/config"
 	"github.com/amuttsch/bahnglei.se/pkg/cookies"
 	"github.com/amuttsch/bahnglei.se/pkg/repository"
-	"github.com/amuttsch/bahnglei.se/templates/components"
 	"github.com/amuttsch/bahnglei.se/templates/pages"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"github.com/sirupsen/logrus"
 )
 
@@ -32,11 +30,8 @@ func Index(e *echo.Echo, config *config.Config, repo *repository.Queries) *contr
 		}
 
 		data := pages.IndexProps{
-			CountryCount: strconv.Itoa(int(countryCount)),
-			StationCount: strconv.Itoa(int(stationCount)),
-			StationSearchProps: components.StationSearchProps{
-				CSRFToken: c.Get(middleware.DefaultCSRFConfig.ContextKey).(string),
-			},
+			CountryCount:   strconv.Itoa(int(countryCount)),
+			StationCount:   strconv.Itoa(int(stationCount)),
 			RecentStations: recentStations,
 		}
 		index := pages.IndexPage(data)

@@ -16,6 +16,9 @@ select * from stop_positions where station_id = $1 and platform = $2;
 -- name: FindStopPositions :many
 select * from stop_positions where id IN (sqlc.slice('ids'));
 
+-- name: UpdateStopPositionSetStationId :exec
+update stop_positions set station_id = $2 where id = $1;
+
 -- name: SetStopPositionStationIdToNearestStation :exec
 update stop_positions u set station_id = s.id
 from stop_positions sp

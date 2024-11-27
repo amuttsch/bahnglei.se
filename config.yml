@@ -1,12 +1,12 @@
 databaseUrl: postgres://postgres:postgres@localhost:5432/bahngleise?sslmode=disable
-tempOsmDir: osm_tmp
+overpassUrl: https://overpass-api.de/api/interpreter
 countries:
   # - iso: CH
   #   name: Switzerland
   #   url: http://localhost:8100/switzerland-latest.osm.pbf
   - iso: DE
     name: Germany
-    url: http://localhost:8100/germany-latest.osm.pbf
+    area: Deutschland
   # - iso: FR
   #   name: France
   #   url: http://localhost:8100/france-latest.osm.pbf

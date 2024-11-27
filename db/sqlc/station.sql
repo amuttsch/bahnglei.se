@@ -12,6 +12,9 @@ update stations
 -- name: GetStation :one
 select * from stations where id = $1;
 
+-- name: GetStationByName :one
+select * from stations where name = $1;
+
 -- name: FindStations :many
 select * from stations where id IN (sqlc.slice('ids'));
 

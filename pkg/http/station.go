@@ -13,7 +13,6 @@ import (
 	"github.com/amuttsch/bahnglei.se/templates/pages"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"github.com/sirupsen/logrus"
 )
 
@@ -64,9 +63,6 @@ func Station(e *echo.Echo, config *config.Config, repo *repository.Queries, tile
 		stationPlatforms, _ := repo.GetPlatformsForStation(c.Request().Context(), stationId)
 
 		data := pages.StationPageProps{
-			StationSearchProps: components.StationSearchProps{
-				CSRFToken: c.Get(middleware.DefaultCSRFConfig.ContextKey).(string),
-			},
 			Station:      station,
 			StopPosition: stationStopPositions,
 			Platforms:    stationPlatforms,

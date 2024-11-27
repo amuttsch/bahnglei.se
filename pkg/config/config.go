@@ -9,7 +9,7 @@ import (
 type CountryConfig struct {
 	Iso  string
 	Name string
-	Url  string
+	Area string
 }
 
 type ThunderforestConfig struct {
@@ -20,9 +20,9 @@ type ThunderforestConfig struct {
 
 type Config struct {
 	DatabaseUrl         string
-	TempOsmDir          string
 	Countries           []CountryConfig
 	ThunderforestConfig ThunderforestConfig
+	OverpassUrl         string
 }
 
 func Read() *Config {

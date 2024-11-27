@@ -13,16 +13,8 @@ select * from platforms where station_id = $1;
 -- name: FindPlatforms :many
 select * from platforms where id IN (sqlc.slice('ids'));
 
--- name: SetPlatformCoordinates :exec
-with cte as (
-	select platform_id, ST_Centroid(ST_Union(coordinate::geometry)) center 
-  from platform_nodes pn
-  where pn.country_iso_code = $1
-  group by platform_id
-)
-update platforms u set coordinate = cte.center::point
-from cte
-where u.id = cte.platform_id;
+-- name: UpdatePlatformSetStationId :exec
+update platforms set station_id = $2 where id = $1;
 
 -- name: SetPlatformToNearestStation :exec
 update platforms u set station_id = s.id
@@ -32,4 +24,4 @@ left join lateral (
 ) s on TRUE
 WHERE u.id = p.id and p.id IN (SELECT id
              FROM platforms inner_platform
-             WHERE inner_platform.country_iso_code = $1);
+             WHERE inner_platform.country_iso_code = $1 and inner_platform.station_id is NULL);

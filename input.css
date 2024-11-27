@@ -20,7 +20,7 @@
 
 @media (min-width: 512px) {
   .search-overlay {
-    left: initial;
+    left: calc(50vw - 256px);
     height: 65svh;
     border-bottom-left-radius: 24px;
     border-bottom-right-radius: 24px;

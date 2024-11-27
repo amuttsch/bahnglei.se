@@ -47,8 +47,11 @@ var importCmd = &cobra.Command{
 
 		repo := repository.New(dbPool)
 
-		osmImporter := osmimporter.New(conf, repo, dbPool)
-		osmImporter.Import(context)
+		err = osmimporter.Run(context, conf, repo, dbPool)
+		if err != nil {
+			log.Errorf("Import failed: %v\n", err)
+			os.Exit(1)
+		}
 
 		log.Infoln("Finished importing OSM data")
 	},

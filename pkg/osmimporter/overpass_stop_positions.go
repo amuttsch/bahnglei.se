@@ -25,7 +25,7 @@ func (o *Overpass) fetchStopPositions(area string, countryIso string) error {
 		return err
 	}
 
-	logrus.Infof("Saving stop positions ")
+	logrus.Infof("Saving stop positions")
 	for _, stopPosition := range resp.Elements {
 		ref := stopPosition.Tags["ref"]
 		localRef := stopPosition.Tags["local_ref"]

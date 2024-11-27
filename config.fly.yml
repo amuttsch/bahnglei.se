@@ -1,5 +1,5 @@
 databaseUrl: postgres://postgres:postgres@localhost:5432/bahngleise?sslmode=disable
-tempOsmDir: /osm
+overpassUrl: https://overpass-api.de/api/interpreter
 countries:
   - iso: DE
     name: Germany

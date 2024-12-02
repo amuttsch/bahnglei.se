@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/amuttsch/bahnglei.se/pkg/repository"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/sirupsen/logrus"
 )
 
@@ -15,7 +16,7 @@ area[name="%s"];
 	wr["railwaiy"="platform"][train=yes](area);
 );
 
-out;
+out tags center;
 `
 
 func (o *Overpass) fetchPlatforms(area string, countryIso string) error {
@@ -32,11 +33,14 @@ func (o *Overpass) fetchPlatforms(area string, countryIso string) error {
 			ID:             platform.ID,
 			Positions:      platform.Tags["ref"],
 			CountryIsoCode: countryIso,
+			Coordinate: pgtype.Point{
+				P: pgtype.Vec2{
+					X: platform.Center.Lon,
+					Y: platform.Center.Lat,
+				},
+				Valid: true,
+			},
 		})
-		if err != nil {
-			logrus.Errorf("Failed to save platform: %+v\n", err)
-			break
-		}
 		if err != nil {
 			logrus.Errorf("Failed to save platform: %+v\n", err)
 			break

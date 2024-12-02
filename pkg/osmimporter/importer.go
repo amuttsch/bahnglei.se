@@ -2,13 +2,24 @@ package osmimporter
 
 import (
 	"context"
+	"time"
 
 	"github.com/amuttsch/bahnglei.se/pkg/config"
 	"github.com/amuttsch/bahnglei.se/pkg/repository"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	log "github.com/sirupsen/logrus"
 )
+
+type OsmImportFlags struct {
+	Stations      bool
+	StopPositions bool
+	Platforms     bool
+	StopAreas     bool
+	Routes        bool
+	ComputeData   bool
+}
 
 type osmImporter struct {
 	config *config.Config
@@ -16,10 +27,11 @@ type osmImporter struct {
 	db     *pgxpool.Pool
 }
 
-func Run(ctx context.Context, config *config.Config, repo *repository.Queries, db *pgxpool.Pool) error {
+func Run(ctx context.Context, config *config.Config, repo *repository.Queries, db *pgxpool.Pool, importflags *OsmImportFlags) error {
 	overpass := NewOverpassApi(ctx, db, repo, config.OverpassUrl)
 
 	for _, c := range config.Countries {
+		startTime := time.Now()
 		log.Infof("Start importing country %s", c.Name)
 		country, err := repo.SaveCountry(ctx, repository.SaveCountryParams{
 			IsoCode: c.Iso,
@@ -30,32 +42,91 @@ func Run(ctx context.Context, config *config.Config, repo *repository.Queries, d
 			return err
 		}
 
-		err = overpass.fetchStations(c.Area, c.Iso)
-		if err != nil {
-			return err
+		if importflags.Stations {
+			err = overpass.fetchStations(c.Area, c.Iso)
+			if err != nil {
+				return err
+			}
+			err = repo.DeleteStationsUpdatedBefore(ctx, repository.DeleteStationsUpdatedBeforeParams{
+				CountryIsoCode: c.Iso,
+				UpdatedAt: pgtype.Timestamptz{
+					Time:  startTime,
+					Valid: true,
+				},
+			})
+			if err != nil {
+				log.Errorf("Failed to cleanup stations: %+v", err)
+				return err
+			}
 		}
 
-		err = overpass.fetchStopPositions(c.Area, c.Iso)
-		if err != nil {
-			return err
+		if importflags.StopPositions {
+			err = overpass.fetchStopPositions(c.Area, c.Iso)
+			if err != nil {
+				return err
+			}
+			err = repo.DeleteStopPositionsUpdatedBefore(ctx, repository.DeleteStopPositionsUpdatedBeforeParams{
+				CountryIsoCode: c.Iso,
+				UpdatedAt: pgtype.Timestamptz{
+					Time:  startTime,
+					Valid: true,
+				},
+			})
+			if err != nil {
+				log.Errorf("Failed to cleanup stop positions: %+v", err)
+				return err
+			}
 		}
 
-		err = overpass.fetchPlatforms(c.Area, c.Iso)
-		if err != nil {
-			return err
+		if importflags.Platforms {
+			err = overpass.fetchPlatforms(c.Area, c.Iso)
+			if err != nil {
+				return err
+			}
+			err = repo.DeletePlatformsUpdatedBefore(ctx, repository.DeletePlatformsUpdatedBeforeParams{
+				CountryIsoCode: c.Iso,
+				UpdatedAt: pgtype.Timestamptz{
+					Time:  startTime,
+					Valid: true,
+				},
+			})
+			if err != nil {
+				log.Errorf("Failed to cleanup platforms: %+v", err)
+				return err
+			}
 		}
 
-		err = overpass.fetchStopAreas(c.Area, c.Iso)
-		if err != nil {
-			return err
+		if importflags.StopAreas {
+			err = overpass.fetchStopAreas(c.Area, c.Iso)
+			if err != nil {
+				return err
+			}
 		}
 
-		err = overpass.fetchRoutes(c.Area)
-		if err != nil {
-			return err
+		if importflags.Routes {
+			err = overpass.fetchRoutes(c.Area, c.Iso)
+			if err != nil {
+				return err
+			}
+			err = repo.DeleteRoutesUpdatedBefore(ctx, repository.DeleteRoutesUpdatedBeforeParams{
+				CountryIsoCode: c.Iso,
+				UpdatedAt: pgtype.Timestamptz{
+					Time:  startTime,
+					Valid: true,
+				},
+			})
+			if err != nil {
+				log.Errorf("Failed to cleanup routes: %+v", err)
+				return err
+			}
 		}
 
-		calculateDistances(ctx, repo, country)
+		if importflags.ComputeData {
+			err = calculateDistances(ctx, repo, country)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil

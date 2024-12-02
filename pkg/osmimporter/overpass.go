@@ -51,6 +51,10 @@ type overpassResponseElement struct {
 		Lat float64 `json:"lat"`
 		Lon float64 `json:"lon"`
 	} `json:"geometry"`
+	Center struct {
+		Lat float64 `json:"lat"`
+		Lon float64 `json:"lon"`
+	} `json:"center"`
 	Bounds *struct {
 		MinLat float64 `json:"minlat"`
 		MinLon float64 `json:"minlon"`

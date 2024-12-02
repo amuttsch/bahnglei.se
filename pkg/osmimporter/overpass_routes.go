@@ -27,7 +27,7 @@ area[name="%s"];
 );
 `
 
-func (o *Overpass) fetchRoutes(area string) error {
+func (o *Overpass) fetchRoutes(area string, countryIsoCode string) error {
 	logrus.Infof("Fetching routes")
 	resp, err := o.fetch(fmt.Sprintf(fetchRoutesQuery, area))
 	if err != nil {
@@ -90,6 +90,7 @@ func (o *Overpass) fetchRoutes(area string) error {
 				String: route.Tags["operator"],
 				Valid:  true,
 			},
+			CountryIsoCode: countryIsoCode,
 		})
 		if err != nil {
 			logrus.Errorf("Failed to save route: %+v\n", err)

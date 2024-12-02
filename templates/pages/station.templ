@@ -10,11 +10,11 @@ type StationPageProps struct {
 	components.StationSearchProps
 	repository.Station
 	Platforms    []repository.Platform
-	StopPosition []repository.StopPosition
+	StopPosition []repository.GetStopPositionsForStationRow
 }
 
 templ StationPage(props StationPageProps) {
-	@layout.Layout(true) {
+	@layout.Layout(true, "- "+props.Station.Name) {
 		<div class="h-full flex flex-col space-y-2 w-full">
 			<div class="flex flex-row items-center space-x-4 p-4">
 				<a href="/" class="w-4 h-4">

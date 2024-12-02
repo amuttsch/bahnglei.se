@@ -5,11 +5,11 @@ import (
 	"github.com/amuttsch/bahnglei.se/templates/components"
 )
 
-templ Layout(fullscreen bool) {
+templ Layout(fullscreen bool, titleSuffix string) {
 	<!DOCTYPE html>
 	<html>
 		<head>
-			<title>Bahnglei.se</title>
+			<title>Bahnglei.se { titleSuffix }</title>
 			<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
 			<script src={ templates.Asset(`js/htmx.min.js`) }></script>
 			<script src={ templates.Asset(`js/hyperscript.js`) }></script>

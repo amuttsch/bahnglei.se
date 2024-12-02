@@ -14,7 +14,7 @@ type AboutPageProps struct {
 }
 
 templ AboutPage(props AboutPageProps) {
-	@layout.Layout(true) {
+	@layout.Layout(true, "About") {
 		<div class="h-full flex flex-col space-y-2 w-full">
 			<div class="flex flex-row items-center space-x-4 p-4">
 				<a href="/" class="w-4 h-4">

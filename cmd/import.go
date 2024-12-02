@@ -16,6 +16,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var importAll *bool
+var importStations *bool
+var importStopPositions *bool
+var importPlatforms *bool
+var importStopAreas *bool
+var importRoutes *bool
+var computeData *bool
+
 var importCmd = &cobra.Command{
 	Use:   "import",
 	Short: "Import OSM railway data",
@@ -47,7 +55,17 @@ var importCmd = &cobra.Command{
 
 		repo := repository.New(dbPool)
 
-		err = osmimporter.Run(context, conf, repo, dbPool)
+		*importAll = *importAll || cmd.Flags().NFlag() == 0
+
+		importFlags := &osmimporter.OsmImportFlags{
+			Stations:      *importAll || *importStations,
+			StopPositions: *importAll || *importStopPositions,
+			Platforms:     *importAll || *importPlatforms,
+			StopAreas:     *importAll || *importStopAreas,
+			Routes:        *importAll || *importRoutes,
+			ComputeData:   *importAll || *computeData,
+		}
+		err = osmimporter.Run(context, conf, repo, dbPool, importFlags)
 		if err != nil {
 			log.Errorf("Import failed: %v\n", err)
 			os.Exit(1)
@@ -58,5 +76,12 @@ var importCmd = &cobra.Command{
 }
 
 func init() {
+	importAll = importCmd.Flags().Bool("all", false, "run all imports")
+	importStations = importCmd.Flags().Bool("stations", false, "import stations")
+	importStopPositions = importCmd.Flags().Bool("stopPositions", false, "import stop positions")
+	importPlatforms = importCmd.Flags().Bool("platforms", false, "import platforms")
+	importStopAreas = importCmd.Flags().Bool("stopAreas", false, "import stop areas")
+	importRoutes = importCmd.Flags().Bool("routes", false, "import routes")
+	computeData = importCmd.Flags().Bool("compute", true, "compute distances, number of tracks, etc. from data")
 	rootCmd.AddCommand(importCmd)
 }

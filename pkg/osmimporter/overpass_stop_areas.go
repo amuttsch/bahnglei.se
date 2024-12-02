@@ -12,7 +12,8 @@ const fetchStopAreasQuery = `
 [out:json];
 area[name="%s"];
 (
-  relation["public_transport"="stop_area"][train=yes](area);
+  //relation["public_transport"="stop_area"][train=yes](area);
+  relation["public_transport"="stop_area"][railway=facility](area);
 );
 
 out;

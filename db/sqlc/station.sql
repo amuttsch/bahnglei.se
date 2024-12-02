@@ -1,12 +1,12 @@
 -- name: CreateStation :one
 insert into stations (id, country_iso_code, name, coordinate, operator, wikidata, wikipedia, tracks) 
   values ($1, $2, $3, $4, $5, $6, $7, $8) 
-  on conflict (id) do update set name = $3, coordinate = $4, operator = $5, wikidata = $6, wikipedia = $7, tracks = $8
+  on conflict (id) do update set name = $3, coordinate = $4, operator = $5, wikidata = $6, wikipedia = $7, updated_at = CURRENT_TIMESTAMP
   returning *;
  
 -- name: UpdateStationNumberOfTracks :exec
 update stations 
-  set tracks = $2
+  set tracks = $2, updated_at = CURRENT_TIMESTAMP
   where id = $1;
 
 -- name: GetStation :one
@@ -29,11 +29,14 @@ select * from stations where name ILIKE $1 order by tracks desc limit 20;
 
 -- name: SetStationNumberOfTracks :exec
 with cte as(
-	select station_id, count(*) num_tracks 
+	select station_id, count(distinct platform) num_tracks 
   from stop_positions sp
   where sp.country_iso_code = $1
   group by station_id
 )
-update stations set tracks = cte.num_tracks
+update stations set tracks = cte.num_tracks, updated_at = CURRENT_TIMESTAMP
 from cte
 where stations.id = cte.station_id;
+
+-- name: DeleteStationsUpdatedBefore :exec
+delete from stations where country_iso_code = $1 and updated_at < $2;

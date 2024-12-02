@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS stop_positions (
 
 CREATE TABLE IF NOT EXISTS routes (
   route_id bigint NOT NULL,
+  country_iso_code text not null,
   stop_position_id bigint NOT NULL,
   from_station text,
   to_station text,

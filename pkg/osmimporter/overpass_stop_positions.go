@@ -12,7 +12,11 @@ const fetchStopPositionsQuery = `
 [out:json];
 area[name="%s"];
 (
-	node["public_transport"="stop_position"]["railway"~"stop"][train=yes](area);
+	node
+    ["public_transport"="stop_position"]
+    [train=yes]
+    [tram!=yes]
+  (area);
 );
 
 out;
@@ -32,6 +36,9 @@ func (o *Overpass) fetchStopPositions(area string, countryIso string) error {
 		platform := ref
 		if localRef != "" {
 			platform = localRef
+		}
+		if platform == "" {
+			continue
 		}
 		_, err := o.repo.CreateStopPosition(o.ctx, repository.CreateStopPositionParams{
 			ID:       stopPosition.ID,

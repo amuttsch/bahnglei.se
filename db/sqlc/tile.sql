@@ -1,5 +1,4 @@
 -- name: GetTile :one
-
 select * from osm_tiles where x = $1 and y = $2 and z = $3;
 
 -- name: CreateTile :one

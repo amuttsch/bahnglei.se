@@ -22,12 +22,14 @@ templ IndexPage(data IndexProps) {
 			@components.StationSearch(data.StationSearchProps)
 		</div>
 		<div class="space-y-1">
-			<span class="text-sm">Recent</span>
-			<div class="flex flex-row pb-2 space-x-2 max-w-xs md:max-w-md overflow-x-scroll">
-				for _, station := range data.RecentStations {
-					@Recent(station)
-				}
-			</div>
+			if len(data.RecentStations) > 0 {
+				<span class="text-sm">Recent</span>
+				<div class="flex flex-row pb-2 space-x-2 max-w-xs md:max-w-md overflow-x-scroll">
+					for _, station := range data.RecentStations {
+						@Recent(station)
+					}
+				</div>
+			}
 		</div>
 	}
 }

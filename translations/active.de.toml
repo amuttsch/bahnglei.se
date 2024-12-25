@@ -1,0 +1,52 @@
+[About]
+hash = "sha1-6b21fb791ac05170893860c248401cd24a59b732"
+other = "Über"
+
+[AboutStations]
+hash = "sha1-ab9fb516c0b6d80c7371c3c1448717b8c0509818"
+other = "Bahnhöfe: {{.Stations}}"
+
+[AboutText]
+hash = "sha1-84ee26be6bbe16f7655bd263713ae6d579ee3bbe"
+other = "Bahnglei.se ist eine Webseite die Informationen zu Bahnhöfen gibt. Insbesondere ist diese Seite nützlich um beim Umsteigen herauszufinden, ob man den Bahnsteig wechseln muss oder nicht. Dies kann bei Verspätungen die Planung des Umstiegs erleichtern, wenn der folgende Zug vom gleichen Bahnsteig fährt."
+
+[Cancel]
+hash = "sha1-77dfd2135f4db726c47299bb55be26f7f4525a46"
+other = "Abbrechen"
+
+[ChooseStation]
+hash = "sha1-1ec3184180bb5d32fdca4d04624a02bfbc836445"
+other = "Bahnhof auswählen"
+
+[CurrentlySupports]
+hash = "sha1-22b289b5272fabfca5b3fd6e56e8b4f4f4743ecb"
+one = "Aktuell unterstützt bahnglei.se {{.Countries}} Land:"
+other = "Aktuell unterstützt bahnglei.se {{.Countries}} Länder:"
+
+[EnterStation]
+hash = "sha1-6cb35d480f72f85ed0d80f1b9c36e17595f188fd"
+other = "Wähle deinen <br/><strong>Bahnhof</strong>"
+
+[NeighboringTracks]
+hash = "sha1-ac3b71002f14e0157aa5a6eeb8fa40d87850d9ee"
+other = "Benachbarte Gleise:"
+
+[NumTracks]
+hash = "sha1-4f0a3befbf243fafedbe7dc2eeecade6596f625f"
+other = "Gleise: {{.NumTracks}}"
+
+[OnlyOneTrack]
+hash = "sha1-c4d94f3574481d040d42fbbb24cfdf497decb18a"
+other = "Dieser Bahnsteig hat nur ein Gleis."
+
+[Platform]
+hash = "sha1-f9eb9a6d55b4c60a466254df01a3cd6afbb47f17"
+other = "Gleis <strong>{{.Platform}}</strong>"
+
+[Recents]
+hash = "sha1-76eec760c9b6e63eda7e9834fa40bc26d6f58eef"
+other = "Letzte"
+
+[SelectTrackForInformation]
+hash = "sha1-1d30134f9268b24de01f544977ca70e42b6846ac"
+other = "Wähle Gleis"

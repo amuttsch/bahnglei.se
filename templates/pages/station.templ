@@ -4,6 +4,8 @@ import (
 	"github.com/amuttsch/bahnglei.se/templates/components"
 	"github.com/amuttsch/bahnglei.se/templates/layout"
 	"github.com/amuttsch/bahnglei.se/pkg/repository"
+
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type StationPageProps struct {
@@ -13,7 +15,7 @@ type StationPageProps struct {
 	StopPosition []repository.GetStopPositionsForStationRow
 }
 
-templ StationPage(props StationPageProps) {
+templ StationPage(props StationPageProps, localizer *i18n.Localizer) {
 	@layout.Layout(true, "- "+props.Station.Name) {
 		<div class="h-full flex flex-col space-y-2 w-full">
 			<div class="flex flex-row items-center space-x-4 p-4">
@@ -25,7 +27,14 @@ templ StationPage(props StationPageProps) {
 			<div id="map" class="rounded-t-3xl shadow-[0_-8px_30px_-15px_rgba(0,0,0,0.3)] z-10 h-[90%]"></div>
 			<div id="trackDetails" class="fixed shadow-[0_-8px_30px_-15px_rgba(0,0,0,0.3)] bottom-0 md:bottom-[25svh] rounded-t-3xl z-50 p-4 bg-[#EBEDF5] w-full max-w-[512px]">
 				<div class="flex flex-col">
-					<h2 class="font-bold">Select track for information</h2>
+					<h2 class="font-bold">
+						{ localizer.Localize(&i18n.LocalizeConfig{
+              DefaultMessage: &i18n.Message{
+                ID:    "SelectTrackForInformation",
+                Other: "Select track for information",
+              },
+            }) }
+					</h2>
 					@Attribution()
 				</div>
 			</div>
@@ -85,18 +94,35 @@ templ StationPage(props StationPageProps) {
 	}
 }
 
-templ TrackDetails(plaform string, neighbors []string, routes []repository.Route) {
+templ TrackDetails(platform string, neighbors []string, routes []repository.Route, localizer *i18n.Localizer) {
 	<div class="flex flex-col space-y-2">
 		<span class="text-md font-bold">
-			Platform <strong>{ plaform }</strong>
+			@templ.Raw(localizer.Localize(&i18n.LocalizeConfig{
+				DefaultMessage: &i18n.Message{
+					ID:    "Platform",
+					Other: "Platform <strong>{{.Platform}}</strong>",
+				}, TemplateData: map[string]interface{}{
+					"Platform": platform,
+				},
+			}))
 		</span>
 		<span class="text-sm">
-			Neighboring tracks:
+			{ localizer.Localize(&i18n.LocalizeConfig{
+              DefaultMessage: &i18n.Message{
+                ID:    "NeighboringTracks",
+                Other: "Neighboring tracks:",
+              },
+            }) }
 		</span>
 		<div class="flex flex-row space-x-2">
 			if len(neighbors) == 0 {
 				<span class="text-xs">
-					This platform has only this one track.
+					{ localizer.Localize(&i18n.LocalizeConfig{
+              DefaultMessage: &i18n.Message{
+                ID:    "OnlyOneTrack",
+                Other: "This platform has only this one track.",
+              },
+            }) }
 				</span>
 			} else {
 				for _, n := range neighbors {
@@ -106,16 +132,6 @@ templ TrackDetails(plaform string, neighbors []string, routes []repository.Route
 				}
 			}
 		</div>
-		<span class="text-sm">
-			Scheduled routes:
-			<div class="flex flex-col space-y-2">
-				for _, route := range routes {
-					<div class="rounded px-2 font-bold bg-[#1455C0] text-white text-sm">
-						{ route.Name.String }
-					</div>
-				}
-			</div>
-		</span>
 		@Attribution()
 	</div>
 }

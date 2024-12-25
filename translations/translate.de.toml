@@ -1,0 +1,12 @@
+[AboutStations]
+hash = "sha1-ab9fb516c0b6d80c7371c3c1448717b8c0509818"
+other = "Bahnhöfe: {{.Stations}}"
+
+[AboutText]
+hash = "sha1-84ee26be6bbe16f7655bd263713ae6d579ee3bbe"
+other = "Bahnglei.se ist eine Webseite die Informationen zu Bahnhöfen gibt. Insbesondere ist diese Seite nützlich um beim Umsteigen herauszufinden, ob man den Bahnsteig wechseln muss oder nicht. Dies kann bei Verspätungen die Planung des Umstiegs erleichtern, wenn der folgende Zug vom gleichen Bahnsteig fährt."
+
+[CurrentlySupports]
+hash = "sha1-22b289b5272fabfca5b3fd6e56e8b4f4f4743ecb"
+one = "Aktuell unterstützt bahnglei.se {{.Countries}} Land:"
+other = "Aktuell unterstützt bahnglei.se {{.Countries}} Länder:"

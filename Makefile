@@ -21,3 +21,12 @@ build-dev: .build-tailwind .build-templ .build-sqlc
 dev:
 	air serve
 
+i18n-extract:
+	goi18n extract -outdir translations
+	
+i18n-merge:
+	cd translations; goi18n merge active.*.toml
+
+i18n-finish:
+	cd translations; goi18n merge active.*.toml translate.*.toml
+

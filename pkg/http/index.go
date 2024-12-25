@@ -1,6 +1,7 @@
 package http
 
 import (
+	"net/http"
 	"strconv"
 
 	"github.com/amuttsch/bahnglei.se/pkg/config"
@@ -8,6 +9,7 @@ import (
 	"github.com/amuttsch/bahnglei.se/pkg/repository"
 	"github.com/amuttsch/bahnglei.se/templates/pages"
 	"github.com/labstack/echo/v4"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/sirupsen/logrus"
 )
 
@@ -16,7 +18,7 @@ type controllerIndex struct {
 	config *config.Config
 }
 
-func Index(e *echo.Echo, config *config.Config, repo *repository.Queries) *controllerIndex {
+func Index(e *echo.Echo, config *config.Config, repo *repository.Queries, bundle *i18n.Bundle) *controllerIndex {
 	e.HEAD("/", func(c echo.Context) error {
 		return c.NoContent(204)
 	})
@@ -34,7 +36,12 @@ func Index(e *echo.Echo, config *config.Config, repo *repository.Queries) *contr
 			StationCount:   strconv.Itoa(int(stationCount)),
 			RecentStations: recentStations,
 		}
-		index := pages.IndexPage(data)
+
+		lang, _ := cookies.GetLanguage(c)
+		accept := c.Request().Header.Get("Accept-Language")
+		localizer := i18n.NewLocalizer(bundle, lang, accept)
+
+		index := pages.IndexPage(data, localizer)
 		return index.Render(c.Request().Context(), c.Response().Writer)
 	})
 
@@ -46,8 +53,25 @@ func Index(e *echo.Echo, config *config.Config, repo *repository.Queries) *contr
 			CountryCount: countryCount,
 			Countries:    countries,
 		}
-		index := pages.AboutPage(data)
-		return index.Render(c.Request().Context(), c.Response().Writer)
+
+		lang, _ := cookies.GetLanguage(c)
+		accept := c.Request().Header.Get("Accept-Language")
+		localizer := i18n.NewLocalizer(bundle, lang, accept)
+
+		about := pages.AboutPage(data, localizer)
+		return about.Render(c.Request().Context(), c.Response().Writer)
+	})
+
+	e.POST("/lang", func(c echo.Context) error {
+		lang := c.FormValue("lang")
+		to := c.FormValue("to")
+		if to == "" {
+			to = "/"
+		}
+
+		cookies.SetLanguageCookie(c, lang)
+
+		return c.Redirect(http.StatusFound, to)
 	})
 
 	return &controllerIndex{

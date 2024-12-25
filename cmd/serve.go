@@ -1,10 +1,12 @@
 package cmd
 
 import (
+	"embed"
 	"errors"
 	"net/http"
 	"os"
 
+	"github.com/BurntSushi/toml"
 	"github.com/amuttsch/bahnglei.se/pkg/config"
 	bahnHttp "github.com/amuttsch/bahnglei.se/pkg/http"
 	"github.com/amuttsch/bahnglei.se/pkg/repository"
@@ -17,11 +19,14 @@ import (
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"golang.org/x/text/language"
 )
 
 var AssetFS *hashfs.FS
+var TranslationsFS embed.FS
 
 var serveCmd = &cobra.Command{
 	Use:   "serve",
@@ -72,8 +77,13 @@ var serveCmd = &cobra.Command{
 			cacheControlHeaderMiddleware,
 		)
 
-		bahnHttp.Index(e, conf, repo)
-		bahnHttp.Station(e, conf, repo, tileService)
+		bundle := i18n.NewBundle(language.English)
+		bundle.RegisterUnmarshalFunc("toml", toml.Unmarshal)
+		bundle.LoadMessageFileFS(TranslationsFS, "translations/active.en.toml")
+		bundle.LoadMessageFileFS(TranslationsFS, "translations/active.de.toml")
+
+		bahnHttp.Index(e, conf, repo, bundle)
+		bahnHttp.Station(e, conf, repo, tileService, bundle)
 
 		go func() {
 			metrics := echo.New()                                // this Echo will run on separate port 8081

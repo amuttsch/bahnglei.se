@@ -1,9 +1,27 @@
 package components
 
 templ Footer() {
-	<ul class="flex flex-row gap-4 justify-center text-gray-500 text-xs pb-4">
-		<li>
-			<a href="https://updown.io/uhvb">Status</a>
-		</li>
-	</ul>
+	<div>
+		<ul class="flex flex-row gap-4 justify-center text-gray-500 text-xs pb-4">
+			<li>
+				<a href="https://updown.io/uhvb">Status</a>
+			</li>
+			<li>
+				<form method="post" action="/lang">
+					<input type="hidden" name="lang" value="de"/>
+					<button type="submit">
+						<img class="w-8" src="/assets/img/flags/de.svg"/>
+					</button>
+				</form>
+			</li>
+			<li>
+				<form method="post" action="/lang">
+					<input type="hidden" name="lang" value="en"/>
+					<button type="submit">
+						<img class="w-8" src="/assets/img/flags/gb.svg"/>
+					</button>
+				</form>
+			</li>
+		</ul>
+	</div>
 }

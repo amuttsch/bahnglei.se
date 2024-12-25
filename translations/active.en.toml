@@ -1,0 +1,16 @@
+About = "About"
+AboutStations = "Stations: {{.Stations}}"
+AboutText = "Bahnglei.se is a website that gives you details for a given train station. You can see which tracks are on the same platform. It aims to help plan you train changes if you need to hurry and get to another platform or if your connection train departs from the the same platform."
+Cancel = "Cancel"
+ChooseStation = "Choose Station"
+EnterStation = "Enter your <br/><strong>station</strong>"
+NeighboringTracks = "Neighboring tracks:"
+NumTracks = "Tracks: {{.NumTracks}}"
+OnlyOneTrack = "This platform has only this one track."
+Platform = "Platform <strong>{{.Platform}}</strong>"
+Recents = "Recent"
+SelectTrackForInformation = "Select track for information"
+
+[CurrentlySupports]
+one = "Currently bahnglei.se supports {{.Countries}} country:"
+other = "Currently bahnglei.se supports {{.Countries}} country:"

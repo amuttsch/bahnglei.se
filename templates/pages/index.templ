@@ -5,6 +5,8 @@ import (
 	"github.com/amuttsch/bahnglei.se/templates/layout"
 	"github.com/amuttsch/bahnglei.se/pkg/cookies"
 	"strconv"
+
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type IndexProps struct {
@@ -14,16 +16,30 @@ type IndexProps struct {
 	RecentStations []cookies.RecentStationCookieItem
 }
 
-templ IndexPage(data IndexProps) {
+templ IndexPage(data IndexProps, localizer *i18n.Localizer) {
 	@layout.Layout(false, "") {
 		<div id="index-bg"></div>
 		<div class="pt-12 space-y-2">
-			<span class="text-3xl">Enter your <br/><strong>station</strong></span>
-			@components.StationSearch(data.StationSearchProps)
+			<span class="text-3xl">
+				@templ.Raw(localizer.Localize(&i18n.LocalizeConfig{
+					DefaultMessage: &i18n.Message{
+						ID:    "EnterStation",
+						Other: "Enter your <br/><strong>station</strong>",
+					},
+				}))
+			</span>
+			@components.StationSearch(data.StationSearchProps, localizer)
 		</div>
 		<div class="space-y-1">
 			if len(data.RecentStations) > 0 {
-				<span class="text-sm">Recent</span>
+				<span class="text-sm">
+					{ localizer.Localize(&i18n.LocalizeConfig{
+              DefaultMessage: &i18n.Message{
+                ID:    "Recents",
+                Other: "Recent",
+              },
+            }) }
+				</span>
 				<div class="flex flex-row pb-2 space-x-2 max-w-xs md:max-w-md overflow-x-scroll">
 					for _, station := range data.RecentStations {
 						@Recent(station)

@@ -12,8 +12,12 @@ import (
 var assetFS embed.FS
 var fsys = hashfs.NewFS(assetFS)
 
+//go:embed translations/*.toml
+var translationsFS embed.FS
+
 func main() {
 	cmd.AssetFS = fsys
+	cmd.TranslationsFS = translationsFS
 	templates.AssetFS = fsys
 	cmd.Execute()
 }

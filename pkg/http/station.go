@@ -13,6 +13,7 @@ import (
 	"github.com/amuttsch/bahnglei.se/templates/pages"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v4"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/sirupsen/logrus"
 )
 
@@ -25,7 +26,7 @@ type StationData struct {
 	components.StationSearchProps
 }
 
-func Station(e *echo.Echo, config *config.Config, repo *repository.Queries, tileService tile.TileService) *controllerStation {
+func Station(e *echo.Echo, config *config.Config, repo *repository.Queries, tileService tile.TileService, bundle *i18n.Bundle) *controllerStation {
 	e.POST("/station", func(c echo.Context) error {
 		searchString := "%" + c.FormValue("station") + "%"
 		stations, _ := repo.SearchStations(c.Request().Context(), searchString)
@@ -42,7 +43,12 @@ func Station(e *echo.Echo, config *config.Config, repo *repository.Queries, tile
 		data := components.StationSearchProps{
 			Stations: stationData,
 		}
-		stationComponent := components.StationSearchResultList(data)
+
+		lang, _ := cookies.GetLanguage(c)
+		accept := c.Request().Header.Get("Accept-Language")
+		localizer := i18n.NewLocalizer(bundle, lang, accept)
+
+		stationComponent := components.StationSearchResultList(data, localizer)
 		return stationComponent.Render(c.Request().Context(), c.Response().Writer)
 	})
 
@@ -68,8 +74,12 @@ func Station(e *echo.Echo, config *config.Config, repo *repository.Queries, tile
 			Platforms:    stationPlatforms,
 		}
 
-		stationPage := pages.StationPage(data)
-		err := cookies.SetStationCookie(c, station)
+		lang, err := cookies.GetLanguage(c)
+		accept := c.Request().Header.Get("Accept-Language")
+		localizer := i18n.NewLocalizer(bundle, lang, accept)
+
+		stationPage := pages.StationPage(data, localizer)
+		err = cookies.SetStationCookie(c, station)
 		if err != nil {
 			logrus.Error(err)
 		}
@@ -95,7 +105,11 @@ func Station(e *echo.Echo, config *config.Config, repo *repository.Queries, tile
 
 		routes, _ := repo.FindRoutesForStopPosition(c.Request().Context(), stationStopPositions.ID)
 
-		trackDetails := pages.TrackDetails(platform, neighbors, routes)
+		lang, _ := cookies.GetLanguage(c)
+		accept := c.Request().Header.Get("Accept-Language")
+		localizer := i18n.NewLocalizer(bundle, lang, accept)
+
+		trackDetails := pages.TrackDetails(platform, neighbors, routes, localizer)
 		return trackDetails.Render(c.Request().Context(), c.Response().Writer)
 	})
 

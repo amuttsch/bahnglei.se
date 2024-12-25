@@ -3,9 +3,10 @@ package pages
 import (
 	"github.com/amuttsch/bahnglei.se/templates/components"
 	"github.com/amuttsch/bahnglei.se/templates/layout"
-	"strconv"
 	"strings"
 	"github.com/amuttsch/bahnglei.se/pkg/repository"
+
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type AboutPageProps struct {
@@ -13,24 +14,58 @@ type AboutPageProps struct {
 	Countries    []repository.GetCountriesRow
 }
 
-templ AboutPage(props AboutPageProps) {
+templ AboutPage(props AboutPageProps, localizer *i18n.Localizer) {
 	@layout.Layout(true, "About") {
 		<div class="h-full flex flex-col space-y-2 w-full">
 			<div class="flex flex-row items-center space-x-4 p-4">
 				<a href="/" class="w-4 h-4">
 					@components.IconArrowBack()
 				</a>
-				<span class="text-xl font-bold">About</span>
+				<span class="text-xl font-bold">
+					{ localizer.Localize(&i18n.LocalizeConfig{
+              DefaultMessage: &i18n.Message{
+                ID:    "About",
+                Other: "About",
+              },
+            }) }
+				</span>
 			</div>
 			<div class="p-4 flex flex-col space-y-2">
-				<span>Bahnglei.se is a website that gives you details for a given train station. You can see which tracks are on the same platform. It aims to help plan you train changes if you need to hurry and get to another platform or if your connection train departs from the the same platform.</span>
-				<span class="font-bold">Currently bahnglei.se supports { strconv.FormatInt(props.CountryCount, 10) } countries:</span>
+				<span>
+					{ localizer.Localize(&i18n.LocalizeConfig{
+              DefaultMessage: &i18n.Message{
+                ID:    "AboutText",
+                Other: "Bahnglei.se is a website that gives you details for a given train station. You can see which tracks are on the same platform. It aims to help plan you train changes if you need to hurry and get to another platform or if your connection train departs from the the same platform.",
+              },
+            }) }
+				</span>
+				<span class="font-bold">
+					{ localizer.Localize(&i18n.LocalizeConfig{
+            DefaultMessage: &i18n.Message{
+              ID:    "CurrentlySupports",
+              One: "Currently bahnglei.se supports {{.Countries}} country:",
+              Other: "Currently bahnglei.se supports {{.Countries}} country:",
+            }, TemplateData: map[string]interface{}{
+              "Countries": props.CountryCount,
+            },
+            PluralCount: 2,
+          }) }
+				</span>
 				for _, c := range props.Countries {
 					<div class="flex flex-row space-x-2 items-center">
 						<img class="w-12" src={ getFlagUrl(c) }/>
 						<div class="flex flex-col">
 							<span class="font-bold">{ c.Name }</span>
-							<span class="text-sm">Stations: { strconv.FormatInt(c.Stations, 10) }</span>
+							<span class="text-sm">
+								{ localizer.Localize(&i18n.LocalizeConfig{
+                    DefaultMessage: &i18n.Message{
+                      ID:    "AboutStations",
+                      Other: "Stations: {{.Stations}}",
+                    }, TemplateData: map[string]interface{}{
+                      "Stations": c.Stations,
+                    },
+                  }) }
+							</span>
 						</div>
 					</div>
 				}

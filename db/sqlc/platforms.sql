@@ -24,7 +24,7 @@ left join lateral (
 ) s on TRUE
 WHERE u.id = p.id and p.id IN (SELECT id
              FROM platforms inner_platform
-             WHERE inner_platform.country_iso_code = $1 and inner_platform.station_id is NULL);
+             WHERE inner_platform.country_iso_code = $1);
 
 -- name: DeletePlatformsUpdatedBefore :exec
 delete from platforms where country_iso_code = $1 and updated_at < $2;

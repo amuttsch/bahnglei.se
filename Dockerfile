@@ -3,7 +3,7 @@ FROM node:latest as tailwind
 WORKDIR /app
 
 COPY . /app
-RUN npx --yes tailwindcss -i ./input.css -o ./assets/css/style.css
+RUN npx --yes tailwindcss-cli -i ./input.css -o ./assets/css/style.css
 
 FROM ghcr.io/a-h/templ:latest as templ
 
@@ -17,7 +17,7 @@ WORKDIR /app
 COPY --chown=65532:65532 . /app
 RUN ["/workspace/sqlc", "generate"]
 
-FROM golang:1.22 as build
+FROM golang:1.24 as build
 
 WORKDIR /app
 

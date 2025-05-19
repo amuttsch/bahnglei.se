@@ -1,5 +1,5 @@
 .build-tailwind:
-	npx --yes tailwindcss-cli -i ./input.css -o ./assets/css/style.css
+	npx --yes @tailwindcss/cli -i ./input.css -o ./assets/css/style.css
 
 .build-application:
 	go build

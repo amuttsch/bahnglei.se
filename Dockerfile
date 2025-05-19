@@ -3,7 +3,7 @@ FROM node:latest as tailwind
 WORKDIR /app
 
 COPY . /app
-RUN npx --yes tailwindcss-cli -i ./input.css -o ./assets/css/style.css
+RUN npm i && npx --yes @tailwindcss/cli -i ./input.css -o ./assets/css/style.css
 
 FROM ghcr.io/a-h/templ:latest as templ
 

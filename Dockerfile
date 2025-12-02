@@ -17,7 +17,7 @@ WORKDIR /app
 COPY --chown=65532:65532 . /app
 RUN ["/workspace/sqlc", "generate"]
 
-FROM golang:1.24 as build
+FROM golang:1.25 as build
 
 WORKDIR /app
 
